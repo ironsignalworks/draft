@@ -1,0 +1,100 @@
+import React from 'react';
+import { Button } from './ui/button';
+import { Card } from './ui/card';
+import { FileText, Layout, Zap, BookOpen } from 'lucide-react';
+import { ScrollArea } from './ui/scroll-area';
+
+interface NewDocumentViewProps {
+  onStartBlank: () => void;
+  onOpenTemplates: () => void;
+}
+
+export function NewDocumentView({ onStartBlank, onOpenTemplates }: NewDocumentViewProps) {
+  const features = [
+    {
+      icon: <FileText className="w-6 h-6" />,
+      title: 'Markdown & Plain Text',
+      description: 'Write in familiar formats, export professional documents',
+    },
+    {
+      icon: <Layout className="w-6 h-6" />,
+      title: 'Smart Pagination',
+      description: 'Automatically reflow content into multiple formats',
+    },
+    {
+      icon: <Zap className="w-6 h-6" />,
+      title: 'Real-time Preview',
+      description: 'See your formatted document as you type',
+    },
+    {
+      icon: <BookOpen className="w-6 h-6" />,
+      title: 'Print-ready Output',
+      description: 'Generate high-quality PDFs for any purpose',
+    },
+  ];
+
+  return (
+    <div className="h-full bg-neutral-50">
+      <ScrollArea className="h-full">
+        <div className="max-w-4xl mx-auto px-8 py-16 text-center min-h-full flex flex-col justify-center">
+          {/* Hero Section */}
+          <div className="mb-12">
+            <h1 className="text-4xl font-semibold text-neutral-900 mb-4">
+              Welcome to DocKernel
+            </h1>
+            <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
+              A browser-native publishing tool that transforms Markdown and plain text 
+              into structured documents and PDFs
+            </p>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex gap-4 justify-center mb-16">
+            <Button 
+              onClick={onStartBlank}
+              size="lg" 
+              className="bg-neutral-900 hover:bg-neutral-800 px-8"
+            >
+              Start from Blank
+            </Button>
+            <Button 
+              onClick={onOpenTemplates}
+              variant="outline" 
+              size="lg"
+              className="px-8"
+            >
+              Apply Template
+            </Button>
+          </div>
+
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {features.map((feature, index) => (
+              <Card
+                key={index}
+                className="p-6 text-left border-neutral-200 hover:shadow-md transition-shadow"
+              >
+                <div className="w-12 h-12 rounded-lg bg-neutral-100 flex items-center justify-center mb-4 text-neutral-700">
+                  {feature.icon}
+                </div>
+                <h3 className="font-semibold text-neutral-900 mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-sm text-neutral-600">
+                  {feature.description}
+                </p>
+              </Card>
+            ))}
+          </div>
+
+          {/* Footer Info */}
+          <div className="mt-16 pt-8 border-t border-neutral-200">
+            <p className="text-sm text-neutral-500">
+              All processing happens locally in your browser. Your documents stay private.
+            </p>
+          </div>
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
