@@ -1,11 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { LeftSidebar } from './components/LeftSidebar';
-import { TopBar } from './components/TopBar';
+import { TopBar, type FormatPresetId } from './components/TopBar';
 import { EditorPanel } from './components/EditorPanel';
 import { PreviewPanel } from './components/PreviewPanel';
 import { InspectorPanel, type InspectorSettings } from './components/InspectorPanel';
 import { ExportModal } from './components/ExportModal';
-import { TemplateGrid, type TemplateDefinition, type TemplateId } from './components/TemplateGrid';
 import { SavedDocuments, type SavedDocumentRecord } from './components/SavedDocuments';
 import { SettingsPanel, type WorkspaceSettings } from './components/SettingsPanel';
 import { ExportPresets } from './components/ExportPresets';
@@ -70,20 +69,52 @@ export default function App() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [layoutFormat, setLayoutFormat] = useState<'zine' | 'book' | 'catalogue' | 'report' | 'custom'>('zine');
-  const [pageSize, setPageSize] = useState<'a4' | 'a5' | 'letter' | 'legal'>('a4');
+  const [formatPreset, setFormatPreset] = useState<FormatPresetId>('book-a4');
   const [fullBookPreview] = useState(false);
   const [previewPageCount] = useState(12);
-  const [activePresetName] = useState('Default');
   const [searchQuery, setSearchQuery] = useState('');
   const [importedImageUrls, setImportedImageUrls] = useState<string[]>([]);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<TemplateId | null>(null);
   const [savedDocuments, setSavedDocuments] = useState<SavedDocumentRecord[]>([]);
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
   const [workspaceSettings, setWorkspaceSettings] = useState<WorkspaceSettings>(defaultWorkspaceSettings);
   const [inspectorSettings, setInspectorSettings] = useState<InspectorSettings>(defaultInspectorSettings);
   const importedImageUrlsRef = useRef<string[]>([]);
   const sharePayload = readExportSharePayloadFromLocation();
+
+  const presetMap: Record<
+    FormatPresetId,
+    {
+      label: string;
+      layoutFormat: 'book' | 'zine' | 'catalogue' | 'report' | 'custom';
+      pageSize: 'a4' | 'a5' | 'letter' | 'legal';
+    }
+  > = {
+    'book-a4': { label: 'Book - A4', layoutFormat: 'book', pageSize: 'a4' },
+    'book-a5': { label: 'Book - A5', layoutFormat: 'book', pageSize: 'a5' },
+    'novel-pocket': { label: 'Novel - Pocket', layoutFormat: 'book', pageSize: 'a5' },
+    'textbook-a4': { label: 'Textbook - A4', layoutFormat: 'book', pageSize: 'a4' },
+    'thesis-a4': { label: 'Thesis - A4', layoutFormat: 'book', pageSize: 'a4' },
+    'report-a4': { label: 'Report - A4', layoutFormat: 'report', pageSize: 'a4' },
+    'report-letter': { label: 'Report - Letter', layoutFormat: 'report', pageSize: 'letter' },
+    'whitepaper-a4': { label: 'Whitepaper - A4', layoutFormat: 'report', pageSize: 'a4' },
+    'proposal-letter': { label: 'Proposal - Letter', layoutFormat: 'report', pageSize: 'letter' },
+    'memo-a4': { label: 'Memo - A4', layoutFormat: 'report', pageSize: 'a4' },
+    'manual-letter': { label: 'Manual - Letter', layoutFormat: 'report', pageSize: 'letter' },
+    'script-letter': { label: 'Script - Letter', layoutFormat: 'report', pageSize: 'letter' },
+    'resume-letter': { label: 'Resume - Letter', layoutFormat: 'custom', pageSize: 'letter' },
+    'cv-a4': { label: 'CV - A4', layoutFormat: 'custom', pageSize: 'a4' },
+    'handout-a4': { label: 'Handout - A4', layoutFormat: 'custom', pageSize: 'a4' },
+    'worksheet-letter': { label: 'Worksheet - Letter', layoutFormat: 'custom', pageSize: 'letter' },
+    'zine-a5': { label: 'Zine - A5', layoutFormat: 'zine', pageSize: 'a5' },
+    'booklet-a5': { label: 'Booklet - A5', layoutFormat: 'zine', pageSize: 'a5' },
+    'flyer-a5': { label: 'Flyer - A5', layoutFormat: 'custom', pageSize: 'a5' },
+    'catalogue-a4': { label: 'Catalogue - A4', layoutFormat: 'catalogue', pageSize: 'a4' },
+    'magazine-a4': { label: 'Magazine - A4', layoutFormat: 'catalogue', pageSize: 'a4' },
+    'magazine-letter': { label: 'Magazine - Letter', layoutFormat: 'catalogue', pageSize: 'letter' },
+    'brochure-letter': { label: 'Brochure - Letter', layoutFormat: 'catalogue', pageSize: 'letter' },
+    'legal-brief': { label: 'Legal Brief - Legal', layoutFormat: 'custom', pageSize: 'legal' },
+  };
+  const currentPreset = presetMap[formatPreset];
 
   const isPhone = viewport.width < 768;
   const isTabletPortrait = viewport.width >= 768 && viewport.width < 1024;
@@ -206,16 +237,6 @@ export default function App() {
     toast.success('Document removed');
   };
 
-  const handleTemplateSelect = (template: TemplateDefinition) => {
-    setSelectedTemplateId(template.id);
-    setLayoutFormat(template.category === 'catalogue' ? 'catalogue' : template.category === 'book' ? 'book' : 'zine');
-    if (content.trim().length === 0) {
-      setContent(template.starterContent);
-    }
-    setShowEditor(true);
-    setActiveNav('new');
-  };
-
   const handleImportFile = async (file: File) => {
     const maxSizeBytes = 2 * 1024 * 1024;
     if (file.size > maxSizeBytes) {
@@ -285,6 +306,13 @@ export default function App() {
     setActiveDocumentId(null);
   };
 
+  const handleFormatPresetChange = (nextPreset: FormatPresetId) => {
+    setFormatPreset(nextPreset);
+    if (activeNav === 'new' && !showEditor) {
+      setShowEditor(true);
+    }
+  };
+
   const filteredContent =
     searchQuery.trim().length === 0
       ? content
@@ -300,13 +328,8 @@ export default function App() {
           onStartBlank={() => {
             clearAndStartNewDocument();
           }}
-          onOpenTemplates={() => setActiveNav('templates')}
         />
       );
-    }
-
-    if (activeNav === 'templates') {
-      return <TemplateGrid selectedTemplateId={selectedTemplateId} onSelectTemplate={handleTemplateSelect} />;
     }
 
     if (activeNav === 'saved') {
@@ -350,11 +373,11 @@ export default function App() {
         <ResizablePanel defaultSize={50} minSize={30}>
           <PreviewPanel
             content={filteredContent}
-            layoutFormat={layoutFormat}
-            pageSize={pageSize}
+            layoutFormat={currentPreset.layoutFormat}
+            pageSize={currentPreset.pageSize}
             fullBookPreview={fullBookPreview}
             previewPageCount={previewPageCount}
-            activePresetName={activePresetName}
+            activePresetName={currentPreset.label}
             inspectorSettings={inspectorSettings}
           />
         </ResizablePanel>
@@ -387,12 +410,9 @@ export default function App() {
           onDocumentNameChange={setDocumentName}
           onImportFile={handleImportFile}
           onNewDocument={clearAndStartNewDocument}
-          onOpenTemplates={() => setActiveNav('templates')}
           onOpenSavedDocs={() => setActiveNav('saved')}
           onOpenSettings={() => setActiveNav('settings')}
           onOpenExport={() => setExportModalOpen(true)}
-          selectedTemplateId={selectedTemplateId}
-          onSelectTemplate={handleTemplateSelect}
           savedDocuments={savedDocuments}
           onOpenSavedDocument={handleOpenSavedDocument}
           onDuplicateSavedDocument={handleDuplicateSavedDocument}
@@ -428,12 +448,9 @@ export default function App() {
           onDocumentNameChange={setDocumentName}
           onImportFile={handleImportFile}
           onNewDocument={clearAndStartNewDocument}
-          onOpenTemplates={() => setActiveNav('templates')}
           onOpenSavedDocs={() => setActiveNav('saved')}
           onOpenSettings={() => setActiveNav('settings')}
           onOpenExport={() => setExportModalOpen(true)}
-          selectedTemplateId={selectedTemplateId}
-          onSelectTemplate={handleTemplateSelect}
           savedDocuments={savedDocuments}
           onOpenSavedDocument={handleOpenSavedDocument}
           onDuplicateSavedDocument={handleDuplicateSavedDocument}
@@ -489,8 +506,8 @@ export default function App() {
           documentName={documentName}
           onDocumentNameChange={setDocumentName}
           onExportClick={() => setExportModalOpen(true)}
-          pageSize={pageSize}
-          onPageSizeChange={setPageSize}
+          formatPreset={formatPreset}
+          onFormatPresetChange={handleFormatPresetChange}
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
         />

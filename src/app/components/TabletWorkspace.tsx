@@ -2,7 +2,6 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
   AlertTriangle,
-  BookTemplate,
   Download,
   FileSearch,
   FileText,
@@ -21,14 +20,13 @@ import { Slider } from './ui/slider';
 import { Switch } from './ui/switch';
 import { SavedDocuments, type SavedDocumentRecord } from './SavedDocuments';
 import { SettingsPanel, type WorkspaceSettings } from './SettingsPanel';
-import { TemplateGrid, type TemplateDefinition, type TemplateId } from './TemplateGrid';
 import { analyzeDocument } from '../lib/preflight';
 import { toast } from 'sonner';
 import { markdownUrlTransform } from '../lib/markdown';
 
 type TabletMode = 'edit' | 'preview' | 'layout' | 'export';
-type UtilityView = 'none' | 'templates' | 'saved' | 'settings';
-type LandscapeSheet = 'none' | 'layout' | 'templates' | 'preflight';
+type UtilityView = 'none' | 'saved' | 'settings';
+type LandscapeSheet = 'none' | 'layout' | 'preflight';
 type LandscapeFocus = 'editor' | 'split' | 'preview';
 
 interface TabletWorkspaceProps {
@@ -39,12 +37,9 @@ interface TabletWorkspaceProps {
   onDocumentNameChange: (value: string) => void;
   onImportFile: (file: File) => void;
   onNewDocument: () => void;
-  onOpenTemplates: () => void;
   onOpenSavedDocs: () => void;
   onOpenSettings: () => void;
   onOpenExport: () => void;
-  selectedTemplateId?: TemplateId | null;
-  onSelectTemplate?: (template: TemplateDefinition) => void;
   savedDocuments?: SavedDocumentRecord[];
   onOpenSavedDocument?: (id: string) => void;
   onDuplicateSavedDocument?: (id: string) => void;
@@ -61,12 +56,9 @@ export function TabletWorkspace({
   onDocumentNameChange,
   onImportFile,
   onNewDocument,
-  onOpenTemplates,
   onOpenSavedDocs,
   onOpenSettings,
   onOpenExport,
-  selectedTemplateId = null,
-  onSelectTemplate,
   savedDocuments = [],
   onOpenSavedDocument,
   onDuplicateSavedDocument,
@@ -133,25 +125,12 @@ export function TabletWorkspace({
                   variant="outline"
                   className="w-full justify-start"
                   onClick={() => {
-                    setUtilityView('templates');
-                    onOpenTemplates();
-                  }}
-                >
-                  <BookTemplate className="h-4 w-4" />
-                  Templates
-                </Button>
-              </SheetClose>
-              <SheetClose asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => {
                     setUtilityView('saved');
                     onOpenSavedDocs();
                   }}
                 >
                   <FileText className="h-4 w-4" />
-                  Saved docs
+                  Library
                 </Button>
               </SheetClose>
               <SheetClose asChild>
@@ -222,7 +201,6 @@ export function TabletWorkspace({
   );
 
   const renderPortraitMode = () => {
-    if (utilityView === 'templates') return <TemplateGrid selectedTemplateId={selectedTemplateId} onSelectTemplate={onSelectTemplate} />;
     if (utilityView === 'saved') {
       return (
         <SavedDocuments
@@ -411,8 +389,6 @@ export function TabletWorkspace({
   };
 
   const renderLandscapeSheetContent = () => {
-    if (landscapeSheet === 'templates') return <TemplateGrid selectedTemplateId={selectedTemplateId} onSelectTemplate={onSelectTemplate} />;
-
     if (landscapeSheet === 'preflight') {
       return (
         <div className="space-y-4 p-4">
@@ -527,14 +503,10 @@ export function TabletWorkspace({
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-2 border-t border-neutral-200 bg-white p-2">
+      <div className="grid grid-cols-2 gap-2 border-t border-neutral-200 bg-white p-2">
         <Button variant="outline" size="sm" className="h-10" onClick={() => openLandscapeSheet('layout')}>
           <LayoutTemplate className="h-4 w-4" />
           Layout
-        </Button>
-        <Button variant="outline" size="sm" className="h-10" onClick={() => openLandscapeSheet('templates')}>
-          <BookTemplate className="h-4 w-4" />
-          Templates
         </Button>
         <Button variant="outline" size="sm" className="h-10" onClick={() => openLandscapeSheet('preflight')}>
           <FileSearch className="h-4 w-4" />
@@ -546,7 +518,7 @@ export function TabletWorkspace({
         <SheetContent side="right" className="w-[420px] max-w-[90vw] p-0">
           <SheetHeader className="border-b border-neutral-200">
             <SheetTitle>
-              {landscapeSheet === 'layout' ? 'Layout' : landscapeSheet === 'templates' ? 'Templates' : 'Preflight'}
+              {landscapeSheet === 'layout' ? 'Layout' : 'Preflight'}
             </SheetTitle>
           </SheetHeader>
           <div className="h-full min-h-0 overflow-y-auto">{renderLandscapeSheetContent()}</div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Layout, Save, Settings, Info, Download, Upload } from 'lucide-react';
+import { FileText, Save, Settings, Info, Download, Upload } from 'lucide-react';
 import { Separator } from './ui/separator';
 import { Button } from './ui/button';
 import logoIcon from '../../../icon.svg';
@@ -14,9 +14,8 @@ interface LeftSidebarProps {
 export function LeftSidebar({ activeNav, onNavChange, onExportClick, onImportFile }: LeftSidebarProps) {
   const navItems = [
     { id: 'new', label: 'Document', subtext: 'Content & structure', icon: FileText },
-    { id: 'templates', label: 'Templates', subtext: 'Layout starting points', icon: Layout },
     { id: 'export', label: 'Export Presets', subtext: 'Output quality & format', icon: Upload },
-    { id: 'saved', label: 'Saved Documents', subtext: 'Local workspace files', icon: Save },
+    { id: 'saved', label: 'Library', subtext: 'Local workspace files', icon: Save },
     { id: 'settings', label: 'Settings', subtext: 'Fonts, defaults, behaviour', icon: Settings },
     { id: 'about', label: 'About', icon: Info },
   ];

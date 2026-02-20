@@ -5,10 +5,9 @@ import { FileText, Layout, Zap, BookOpen } from 'lucide-react';
 
 interface NewDocumentViewProps {
   onStartBlank: () => void;
-  onOpenTemplates: () => void;
 }
 
-export function NewDocumentView({ onStartBlank, onOpenTemplates }: NewDocumentViewProps) {
+export function NewDocumentView({ onStartBlank }: NewDocumentViewProps) {
   const [step, setStep] = useState(0);
   const onboardingSteps = [
     {
@@ -27,9 +26,9 @@ export function NewDocumentView({ onStartBlank, onOpenTemplates }: NewDocumentVi
       text: 'Tune page structure and formatting in Layout and Inspector controls.',
     },
     {
-      label: 'STEP 4 - Templates',
-      title: 'Try different layouts',
-      text: 'Templates instantly reflow your document into new formats without changing the content.',
+      label: 'STEP 4 - Format',
+      title: 'Choose format in top bar',
+      text: 'Pick Book, Zine, Catalogue, or Report from the top nav to reflow layout without changing content.',
     },
     {
       label: 'STEP 5 - Export',
@@ -83,14 +82,6 @@ export function NewDocumentView({ onStartBlank, onOpenTemplates }: NewDocumentVi
                 className="bg-neutral-900 hover:bg-neutral-800 px-8 w-full md:w-auto"
               >
                 Start from Blank
-              </Button>
-              <Button
-                onClick={onOpenTemplates}
-                variant="outline"
-                size="lg"
-                className="px-8 w-full md:w-auto"
-              >
-                Apply Template
               </Button>
             </div>
           </div>

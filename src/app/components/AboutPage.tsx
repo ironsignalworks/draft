@@ -30,7 +30,7 @@ export function AboutPage() {
               <ul className="text-sm text-neutral-600 mt-2 list-disc pl-5 space-y-1">
                 <li>Continuous document editing with Markdown support</li>
                 <li>Fixed-page live preview with zoom, rulers, and image placement</li>
-                <li>Template starts, saved documents, and workspace preferences</li>
+                <li>Format presets, Library documents, and workspace preferences</li>
                 <li>PDF export with downloadable files and share links</li>
               </ul>
             </div>

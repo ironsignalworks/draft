@@ -44,7 +44,7 @@ export function SavedDocuments({
   return (
     <div className="h-full bg-white flex flex-col">
       <div className="px-6 py-4 border-b border-neutral-200">
-        <h2 className="text-lg font-semibold text-neutral-900">Saved Documents</h2>
+        <h2 className="text-lg font-semibold text-neutral-900">Library</h2>
         <p className="text-sm text-neutral-500 mt-1">Local workspace files</p>
       </div>
 
@@ -52,7 +52,7 @@ export function SavedDocuments({
         <div className="p-6">
           {documents.length === 0 ? (
             <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-5">
-              <h3 className="text-sm font-semibold text-neutral-900">No saved documents yet</h3>
+              <h3 className="text-sm font-semibold text-neutral-900">No library items yet</h3>
               <p className="mt-1 text-sm text-neutral-600">Documents saved in this browser will appear here for quick access.</p>
             </div>
           ) : (

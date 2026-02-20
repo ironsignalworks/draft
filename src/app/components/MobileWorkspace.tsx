@@ -1,7 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
-  BookTemplate,
   Download,
   FileText,
   ImagePlus,
@@ -20,11 +19,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { toast } from 'sonner';
 import { SavedDocuments, type SavedDocumentRecord } from './SavedDocuments';
 import { SettingsPanel, type WorkspaceSettings } from './SettingsPanel';
-import { TemplateGrid, type TemplateDefinition, type TemplateId } from './TemplateGrid';
 import { markdownUrlTransform } from '../lib/markdown';
 
 type MobileMode = 'edit' | 'preview' | 'layout';
-type UtilityView = 'none' | 'templates' | 'saved' | 'settings';
+type UtilityView = 'none' | 'saved' | 'settings';
 
 interface MobileWorkspaceProps {
   content: string;
@@ -33,12 +31,9 @@ interface MobileWorkspaceProps {
   onDocumentNameChange: (value: string) => void;
   onImportFile: (file: File) => void;
   onNewDocument: () => void;
-  onOpenTemplates: () => void;
   onOpenSavedDocs: () => void;
   onOpenSettings: () => void;
   onOpenExport: () => void;
-  selectedTemplateId?: TemplateId | null;
-  onSelectTemplate?: (template: TemplateDefinition) => void;
   savedDocuments?: SavedDocumentRecord[];
   onOpenSavedDocument?: (id: string) => void;
   onDuplicateSavedDocument?: (id: string) => void;
@@ -54,12 +49,9 @@ export function MobileWorkspace({
   onDocumentNameChange,
   onImportFile,
   onNewDocument,
-  onOpenTemplates,
   onOpenSavedDocs,
   onOpenSettings,
   onOpenExport,
-  selectedTemplateId = null,
-  onSelectTemplate,
   savedDocuments = [],
   onOpenSavedDocument,
   onDuplicateSavedDocument,
@@ -305,9 +297,6 @@ export function MobileWorkspace({
   );
 
   const renderModeContent = () => {
-    if (utilityView === 'templates') {
-      return <TemplateGrid selectedTemplateId={selectedTemplateId} onSelectTemplate={onSelectTemplate} />;
-    }
     if (utilityView === 'saved') {
       return (
         <SavedDocuments
@@ -361,25 +350,12 @@ export function MobileWorkspace({
                     variant="outline"
                     className="w-full justify-start"
                     onClick={() => {
-                      setUtilityView('templates');
-                      onOpenTemplates();
-                    }}
-                  >
-                    <BookTemplate className="h-4 w-4" />
-                    Templates
-                  </Button>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => {
                       setUtilityView('saved');
                       onOpenSavedDocs();
                     }}
                   >
                     <FileText className="h-4 w-4" />
-                    Saved docs
+                    Library
                   </Button>
                 </SheetClose>
                 <SheetClose asChild>
