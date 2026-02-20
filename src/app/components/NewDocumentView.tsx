@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { FileText, Layout, Zap, BookOpen } from 'lucide-react';
-import { ScrollArea } from './ui/scroll-area';
 
 interface NewDocumentViewProps {
   onStartBlank: () => void;
@@ -64,36 +63,38 @@ export function NewDocumentView({ onStartBlank, onOpenTemplates }: NewDocumentVi
 
   return (
     <div className="h-full bg-neutral-50">
-      <ScrollArea className="h-full">
-        <div className="max-w-4xl mx-auto px-8 py-16 text-center min-h-full flex flex-col justify-center">
-          {/* Hero Section */}
-          <div className="mb-12">
-            <h1 className="text-4xl font-semibold text-neutral-900 mb-4">
-              Welcome to DocKernel
-            </h1>
-            <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-              A browser-native publishing tool that transforms Markdown and plain text 
-              into structured documents and PDFs
-            </p>
-          </div>
+      <div className="h-full overflow-y-auto overflow-x-hidden">
+        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 text-center min-h-full flex flex-col justify-center">
+          <div className="w-full max-w-2xl mx-auto">
+            {/* Hero Section */}
+            <div className="mb-12 px-1 sm:px-0">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-neutral-900 mb-4 leading-tight break-words [overflow-wrap:anywhere]">
+                Welcome to DocKernel
+              </h1>
+              <p className="text-base sm:text-lg text-neutral-600 break-words [overflow-wrap:anywhere]">
+                A browser-native publishing tool that transforms Markdown and plain text 
+                into structured documents and PDFs
+              </p>
+            </div>
 
-          {/* Quick Actions */}
-          <div className="flex gap-4 justify-center mb-16">
-            <Button 
-              onClick={onStartBlank}
-              size="lg" 
-              className="bg-neutral-900 hover:bg-neutral-800 px-8"
-            >
-              Start from Blank
-            </Button>
-            <Button 
-              onClick={onOpenTemplates}
-              variant="outline" 
-              size="lg"
-              className="px-8"
-            >
-              Apply Template
-            </Button>
+            {/* Quick Actions */}
+            <div className="flex flex-col md:flex-row gap-3 md:gap-4 justify-center items-stretch md:items-center mb-12 sm:mb-16">
+              <Button 
+                onClick={onStartBlank}
+                size="lg" 
+                className="bg-neutral-900 hover:bg-neutral-800 px-8 w-full md:w-auto"
+              >
+                Start from Blank
+              </Button>
+              <Button 
+                onClick={onOpenTemplates}
+                variant="outline" 
+                size="lg"
+                className="px-8 w-full md:w-auto"
+              >
+                Apply Template
+              </Button>
+            </div>
           </div>
 
           <div className="mb-12">
@@ -162,7 +163,7 @@ export function NewDocumentView({ onStartBlank, onOpenTemplates }: NewDocumentVi
             </p>
           </div>
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

@@ -174,7 +174,7 @@ export function ExportModal({ open, onClose, content, onReviewLayout }: ExportMo
                 disabled={hasMajorIssues}
               >
                 <Download className="w-4 h-4" />
-                Download final PDF
+                Download PDF
               </Button>
               <Button variant="outline" className="w-full" onClick={onClose}>
                 Back to document

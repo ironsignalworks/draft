@@ -1,34 +1,69 @@
 
-  # DocKernel UI Design
+# DocKernel
 
-  This is a code bundle for DocKernel UI Design.
+DocKernel is a browser-native publishing UI built with React + Vite.
 
-  ## Running the code
+## Tech stack
 
-  Run `npm i` to install the dependencies.
+- React
+- Vite
+- Tailwind CSS
+- Radix UI
+- Lucide icons
 
-  Run `npm run dev` to start the development server.
+## Getting started
 
-  ## Deploying to GitHub Pages
+1. Install dependencies:
 
-  This repo is configured for GitHub Pages in two ways:
+```bash
+npm install
+```
 
-  1. Automatic deploy on push to `main` via `.github/workflows/deploy-pages.yml`
-  2. Manual deploy from your machine via `npm run deploy`
+2. Start dev server:
 
-  ### One-time GitHub setup
+```bash
+npm run dev
+```
 
-  1. Push this repo to GitHub.
-  2. In GitHub, go to `Settings > Pages`.
-  3. Under **Build and deployment**, set **Source** to `GitHub Actions`.
-  4. Your site will publish at:
-     `https://ironsignalworks.github.io/dockernel/`
+3. Build for production:
 
-  ### Manual deploy command
+```bash
+npm run build
+```
 
-  Run:
+## Scripts
 
-  `npm run deploy`
+- `npm run dev` - start local dev server
+- `npm run build` - production build (uses `/dockernel/` base path for GitHub Pages)
+- `npm run deploy` - publish `dist/` to `gh-pages` branch
 
-  This builds with a relative base path (`npm run build:gh`) and publishes `dist` to the `gh-pages` branch.
-  
+## GitHub Pages deployment
+
+This repo supports:
+
+1. GitHub Actions deploy from `main` (recommended)
+2. Manual deploy with `npm run deploy`
+
+### One-time GitHub setup
+
+1. Push repository to GitHub.
+2. Open `Settings > Pages`.
+3. Set **Source** to **GitHub Actions**.
+4. Site URL will be:
+
+```txt
+https://ironsignalworks.github.io/dockernel/
+```
+
+### Manual deploy
+
+```bash
+npm run deploy
+```
+
+This publishes the current `dist/` output to the `gh-pages` branch.
+
+## Notes
+
+- If GitHub Pages is not updating, confirm the Pages source is set to **GitHub Actions** and that the latest workflow run succeeded.
+- If you use both `main` and `gh-pages`, keep in mind only the configured Pages source branch/workflow controls what is live.

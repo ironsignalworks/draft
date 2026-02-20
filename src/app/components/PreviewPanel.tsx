@@ -107,12 +107,12 @@ export function PreviewPanel({ content }: PreviewPanelProps) {
     <div className="h-full bg-neutral-100 flex flex-col items-center">
       {/* Preview Controls */}
       <div className="w-full px-6 py-3 bg-white border-b border-neutral-200 flex flex-col gap-2">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="text-xs text-neutral-500 uppercase tracking-wide">Layout Preview</div>
             <p className="mt-1 text-xs text-neutral-500">This view matches the final export.</p>
           </div>
-          <div className="inline-flex items-center gap-2 whitespace-nowrap">
+          <div className="inline-flex items-center gap-2 whitespace-nowrap max-w-full overflow-x-auto">
             <button
               onClick={() => setZoom((prev) => clampZoom(prev - 0.1))}
               className="h-8 w-8 inline-flex items-center justify-center text-xs text-neutral-600 hover:text-neutral-900 rounded-md border border-neutral-300 shadow-sm hover:border-neutral-400 transition-colors"

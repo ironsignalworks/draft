@@ -7,16 +7,15 @@ import logoIcon from '../../../icon.svg';
 interface LeftSidebarProps {
   activeNav: string;
   onNavChange: (nav: string) => void;
-  onExportClick: () => void;
   onImportFile: (file: File) => void;
 }
 
-export function LeftSidebar({ activeNav, onNavChange, onExportClick, onImportFile }: LeftSidebarProps) {
+export function LeftSidebar({ activeNav, onNavChange, onImportFile }: LeftSidebarProps) {
   const navItems = [
     { id: 'new', label: 'Document', subtext: 'Content & structure', icon: FileText },
     { id: 'templates', label: 'Templates', subtext: 'Layout starting points', icon: Layout },
     { id: 'paginator', label: 'Paginator', subtext: 'Page flow & formatting', icon: Layers },
-    { id: 'export', label: 'Export Presets', subtext: 'Output quality & format', icon: Download },
+    { id: 'export', label: 'Export Presets', subtext: 'Output quality & format', icon: Upload },
     { id: 'saved', label: 'Saved Documents', subtext: 'Local workspace files', icon: Save },
     { id: 'settings', label: 'Settings', subtext: 'Fonts, defaults, behaviour', icon: Settings },
     { id: 'about', label: 'About', icon: Info },
@@ -71,8 +70,8 @@ export function LeftSidebar({ activeNav, onNavChange, onExportClick, onImportFil
           className="w-full justify-center gap-2 rounded-lg text-center"
           onClick={() => document.getElementById('doc-import-input')?.click()}
         >
-          <Upload className="w-4 h-4" />
-          Import Document
+          <Download className="w-4 h-4" />
+          Import File
         </Button>
         <input
           id="doc-import-input"
@@ -85,13 +84,6 @@ export function LeftSidebar({ activeNav, onNavChange, onExportClick, onImportFil
             e.currentTarget.value = '';
           }}
         />
-        <Button
-          onClick={onExportClick}
-          className="w-full justify-center gap-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-center"
-        >
-          <Download className="w-4 h-4" />
-          Export PDF
-        </Button>
       </div>
     </div>
   );
