@@ -426,6 +426,7 @@ export default function App() {
           onClose={() => setExportModalOpen(false)}
           content={content}
           documentName={documentName}
+          inspectorSettings={inspectorSettings}
           onReviewLayout={() => {
             setShowEditor(true);
             setActiveNav('new');
@@ -464,6 +465,7 @@ export default function App() {
           onClose={() => setExportModalOpen(false)}
           content={content}
           documentName={documentName}
+          inspectorSettings={inspectorSettings}
           onReviewLayout={() => {
             setShowEditor(true);
             setActiveNav('new');
@@ -522,6 +524,7 @@ export default function App() {
         onClose={() => setExportModalOpen(false)}
         content={content}
         documentName={documentName}
+        inspectorSettings={inspectorSettings}
         onReviewLayout={() => {
           setShowEditor(true);
           setActiveNav('new');

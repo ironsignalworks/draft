@@ -189,6 +189,16 @@ export function PreviewPanel({
 
   const trimmedContent = content.trim();
   const hasContent = trimmedContent.length > 0;
+  const mmToPx = (mm: number) => Math.round(mm * 3.78);
+  const appliedMargins = {
+    top: mmToPx(inspectorSettings?.margins.top ?? 25),
+    bottom: mmToPx(inspectorSettings?.margins.bottom ?? 25),
+    left: mmToPx(inspectorSettings?.margins.left ?? 20),
+    right: mmToPx(inspectorSettings?.margins.right ?? 20),
+  };
+  const headingScale = (inspectorSettings?.headingScale ?? 15) / 10;
+  const bodyRhythm = (inspectorSettings?.bodyRhythm ?? 16) / 10;
+  const typePreset = inspectorSettings?.typePreset ?? 'Editorial';
   const pageDimensionsByFormat: Record<typeof layoutFormat, { width: number; height: number }> = {
     book: { width: 794, height: 1123 },
     zine: { width: 680, height: 960 },
@@ -197,18 +207,26 @@ export function PreviewPanel({
     custom: pageSize === 'a5' ? { width: 560, height: 794 } : pageSize === 'letter' ? { width: 816, height: 1056 } : pageSize === 'legal' ? { width: 816, height: 1344 } : { width: 794, height: 1123 },
   };
   const pageClassByFormat: Record<typeof layoutFormat, string> = {
-    book: 'w-[794px] min-h-[1123px] p-16',
-    zine: 'w-[680px] min-h-[960px] p-14',
-    catalogue: 'w-[860px] min-h-[1123px] p-12',
-    report: 'w-[794px] min-h-[1123px] p-14',
-    custom: 'w-[794px] min-h-[1123px] p-16',
+    book: 'w-[794px] min-h-[1123px]',
+    zine: 'w-[680px] min-h-[960px]',
+    catalogue: 'w-[860px] min-h-[1123px]',
+    report: 'w-[794px] min-h-[1123px]',
+    custom: 'w-[794px] min-h-[1123px]',
   };
+  const presetTypographyClass =
+    typePreset === 'Technical'
+      ? 'tracking-[0.01em]'
+      : typePreset === 'Compact'
+        ? 'leading-tight'
+        : typePreset === 'Resume'
+          ? 'tracking-[0.005em]'
+          : 'leading-relaxed';
   const contentClassByFormat: Record<typeof layoutFormat, string> = {
-    book: 'prose prose-neutral max-w-none whitespace-pre-wrap break-all',
-    zine: 'prose prose-neutral max-w-none text-[15px] leading-7 whitespace-pre-wrap break-all',
-    catalogue: 'prose prose-neutral max-w-none columns-2 gap-8 whitespace-pre-wrap break-all',
-    report: 'prose prose-neutral max-w-none whitespace-pre-wrap break-all',
-    custom: 'prose prose-neutral max-w-none whitespace-pre-wrap break-all',
+    book: `prose prose-neutral max-w-none whitespace-pre-wrap break-all ${presetTypographyClass}`,
+    zine: `prose prose-neutral max-w-none text-[15px] whitespace-pre-wrap break-all ${presetTypographyClass}`,
+    catalogue: `prose prose-neutral max-w-none whitespace-pre-wrap break-all ${presetTypographyClass}`,
+    report: `prose prose-neutral max-w-none whitespace-pre-wrap break-all ${presetTypographyClass}`,
+    custom: `prose prose-neutral max-w-none whitespace-pre-wrap break-all ${presetTypographyClass}`,
   };
   const formatLabel = layoutFormat.charAt(0).toUpperCase() + layoutFormat.slice(1);
   const targetPages = fullBookPreview ? Math.min(Math.max(previewPageCount, 2), 24) : 2;
@@ -245,6 +263,13 @@ export function PreviewPanel({
   const goNext = () => {
     setCurrentPage((prev) => Math.min(maxPageIndex, prev + (spreadView ? 2 : 1)));
   };
+
+  const pageNumberClass =
+    inspectorSettings?.numberingFormat === 'top-right'
+      ? 'absolute top-3 right-4 text-xs text-neutral-400 flex items-center gap-2'
+      : inspectorSettings?.numberingFormat === 'bottom-center'
+        ? 'absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-neutral-400 flex items-center gap-2'
+        : 'absolute bottom-3 right-4 text-xs text-neutral-400 flex items-center gap-2';
 
   const applySnap = useCallback(
     (value: number) => (snapToRuler ? Math.round(value / snapStepPx) * snapStepPx : value),
@@ -470,13 +495,46 @@ export function PreviewPanel({
                       />
                     );
                   },
+                  p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
+                    <p
+                      {...props}
+                      style={{
+                        marginBottom: `${inspectorSettings?.paragraphGap ?? 12}px`,
+                        lineHeight: bodyRhythm,
+                      }}
+                    />
+                  ),
+                  h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+                    <h1 {...props} style={{ fontSize: `${2.2 * headingScale}rem`, lineHeight: 1.1 }} />
+                  ),
+                  h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+                    <h2 {...props} style={{ fontSize: `${1.8 * headingScale}rem`, lineHeight: 1.15 }} />
+                  ),
+                  h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+                    <h3 {...props} style={{ fontSize: `${1.45 * headingScale}rem`, lineHeight: 1.2 }} />
+                  ),
                 };
 
                 return (
                 <div
                   key={`preview-page-${pageIndex}`}
                   className={`bg-white rounded-lg shadow-lg relative ${singleImageUrl ? 'p-4' : pageClassByFormat[layoutFormat]}`}
+                  style={
+                    singleImageUrl
+                      ? undefined
+                      : {
+                          paddingTop: `${appliedMargins.top}px`,
+                          paddingBottom: `${appliedMargins.bottom}px`,
+                          paddingLeft: `${appliedMargins.left}px`,
+                          paddingRight: `${appliedMargins.right}px`,
+                        }
+                  }
                 >
+                  {!!inspectorSettings?.headerContent && !singleImageUrl && (
+                    <div className="pointer-events-none absolute top-3 left-4 right-4 text-[10px] uppercase tracking-wide text-neutral-400">
+                      {inspectorSettings.headerContent}
+                    </div>
+                  )}
                   {/* Page content with margins visible */}
                   <div
                     className={
@@ -489,6 +547,7 @@ export function PreviewPanel({
                             fontFamily: inspectorSettings?.primaryFont ?? undefined,
                             columnCount: inspectorSettings?.columns === 2 ? 2 : undefined,
                             columnGap: inspectorSettings?.columns === 2 ? `${inspectorSettings.sectionGap}px` : undefined,
+                            lineHeight: bodyRhythm,
                           }
                     }
                   >
@@ -522,17 +581,45 @@ export function PreviewPanel({
                     )}
                   </div>
 
+                  {!!inspectorSettings?.footerContent && !singleImageUrl && (
+                    <div className="pointer-events-none absolute bottom-3 left-4 right-4 text-[10px] uppercase tracking-wide text-neutral-400">
+                      {inspectorSettings.footerContent}
+                    </div>
+                  )}
+
+                  {inspectorSettings?.addSignature && pageIndex === maxPageIndex && !singleImageUrl && (
+                    <div className="absolute left-4 right-4 bottom-10 text-xs text-neutral-500">
+                      <div className="mb-1">{inspectorSettings.signatureLabel || 'Approved by'}</div>
+                      <div className="h-px w-[220px] bg-neutral-400" />
+                      {inspectorSettings.signatureFileName ? (
+                        <div className="mt-1 text-[10px] text-neutral-400">{inspectorSettings.signatureFileName}</div>
+                      ) : null}
+                    </div>
+                  )}
+
                   {/* Margin indicators - subtle guides */}
                   {showMargins && (
-                    <div className="absolute inset-0 pointer-events-none border-[60px] border-neutral-50 rounded-lg" />
+                    <div
+                      className="absolute inset-0 pointer-events-none rounded-lg"
+                      style={{
+                        borderStyle: 'solid',
+                        borderTopWidth: `${appliedMargins.top}px`,
+                        borderBottomWidth: `${appliedMargins.bottom}px`,
+                        borderLeftWidth: `${appliedMargins.left}px`,
+                        borderRightWidth: `${appliedMargins.right}px`,
+                        borderColor: '#fafafa',
+                      }}
+                    />
                   )}
                   {/* Page number */}
-                  <div className="absolute bottom-8 right-16 text-xs text-neutral-400 flex items-center gap-2">
-                    <span className="rounded border border-neutral-300 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-neutral-500">
-                      {formatLabel}
-                    </span>
-                    <span>{pageIndex + 1}{spreadView && idx === 1 ? 'R' : spreadView ? 'L' : ''}</span>
-                  </div>
+                  {inspectorSettings?.numberingFormat !== 'none' && (
+                    <div className={pageNumberClass}>
+                      <span className="rounded border border-neutral-300 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-neutral-500">
+                        {formatLabel}
+                      </span>
+                      <span>{pageIndex + 1}{spreadView && idx === 1 ? 'R' : spreadView ? 'L' : ''}</span>
+                    </div>
+                  )}
                 </div>
               );
               })}

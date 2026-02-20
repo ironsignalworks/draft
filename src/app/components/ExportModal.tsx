@@ -13,6 +13,7 @@ import { splitContentIntoPages } from '../lib/paging';
 import ReactMarkdown from 'react-markdown';
 import { markdownUrlTransform } from '../lib/markdown';
 import { toast } from 'sonner';
+import type { InspectorSettings } from './InspectorPanel';
 
 interface ExportModalProps {
   open: boolean;
@@ -20,14 +21,15 @@ interface ExportModalProps {
   content: string;
   documentName?: string;
   onReviewLayout: () => void;
+  inspectorSettings?: InspectorSettings;
 }
 
-export function ExportModal({ open, onClose, content, documentName, onReviewLayout }: ExportModalProps) {
+export function ExportModal({ open, onClose, content, documentName, onReviewLayout, inspectorSettings }: ExportModalProps) {
   const [isPreparingPreview, setIsPreparingPreview] = useState(false);
-  const [quality, setQuality] = useState(85);
-  const [compression, setCompression] = useState(true);
-  const [includeMetadata, setIncludeMetadata] = useState(true);
-  const [watermark, setWatermark] = useState(false);
+  const [quality, setQuality] = useState(inspectorSettings?.exportQuality ?? 85);
+  const [compression, setCompression] = useState(inspectorSettings?.compression ?? true);
+  const [includeMetadata, setIncludeMetadata] = useState(inspectorSettings?.includeMetadata ?? true);
+  const [watermark, setWatermark] = useState(inspectorSettings?.watermark ?? false);
   const preflight = analyzeDocument(content);
   const hasMajorIssues = preflight.severity === 'major';
   const estimatedPages = Math.max(1, Math.ceil(Math.max(content.trim().length, 1) / 1800));
@@ -35,13 +37,17 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
 
   useEffect(() => {
     if (!open) return;
+    setQuality(inspectorSettings?.exportQuality ?? 85);
+    setCompression(inspectorSettings?.compression ?? true);
+    setIncludeMetadata(inspectorSettings?.includeMetadata ?? true);
+    setWatermark(inspectorSettings?.watermark ?? false);
     setIsPreparingPreview(true);
     const timer = window.setTimeout(() => {
       setIsPreparingPreview(false);
       toast.success('Final layout generated');
     }, 900);
     return () => window.clearTimeout(timer);
-  }, [open]);
+  }, [open, inspectorSettings]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

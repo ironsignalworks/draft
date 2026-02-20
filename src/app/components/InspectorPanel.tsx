@@ -38,6 +38,22 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
   const setValue = <K extends keyof InspectorSettings>(key: K, value: InspectorSettings[K]) => {
     onChange({ ...settings, [key]: value });
   };
+  const applyTypePreset = (preset: InspectorSettings['typePreset']) => {
+    const presetValues: Record<string, Pick<InspectorSettings, 'headingScale' | 'bodyRhythm' | 'paragraphGap'>> = {
+      Editorial: { headingScale: 16, bodyRhythm: 17, paragraphGap: 14 },
+      Technical: { headingScale: 14, bodyRhythm: 15, paragraphGap: 10 },
+      Compact: { headingScale: 13, bodyRhythm: 14, paragraphGap: 8 },
+      Resume: { headingScale: 12, bodyRhythm: 13, paragraphGap: 8 },
+    };
+    const next = presetValues[preset] ?? presetValues.Editorial;
+    onChange({
+      ...settings,
+      typePreset: preset,
+      headingScale: next.headingScale,
+      bodyRhythm: next.bodyRhythm,
+      paragraphGap: next.paragraphGap,
+    });
+  };
 
   return (
     <div className="h-full bg-white border-l border-neutral-200 flex flex-col">
@@ -155,7 +171,7 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
               <Label className="text-xs uppercase tracking-wide text-neutral-500">Presets</Label>
               <div className="grid grid-cols-2 gap-2">
                 {['Editorial', 'Technical', 'Compact', 'Resume'].map((preset) => (
-                  <Button key={preset} variant="outline" size="sm" className={settings.typePreset === preset ? 'bg-neutral-100 border-neutral-900' : ''} onClick={() => setValue('typePreset', preset)}>{preset}</Button>
+                  <Button key={preset} variant="outline" size="sm" className={settings.typePreset === preset ? 'bg-neutral-100 border-neutral-900' : ''} onClick={() => applyTypePreset(preset)}>{preset}</Button>
                 ))}
               </div>
             </div>
