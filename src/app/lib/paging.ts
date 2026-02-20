@@ -1,5 +1,15 @@
 export const PAGE_BREAK_TOKEN = '<!--DK_PAGE_BREAK-->';
 
+function isMarkdownImageLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  const match = trimmed.match(/^!\[[^\]]*]\((.+)\)$/);
+  if (!match) return false;
+  const rawBody = match[1].trim();
+  if (!rawBody) return false;
+  return true;
+}
+
 export function splitContentIntoPages(content: string, approxCharsPerPage: number): string[] {
   const source = (content ?? '').trim();
   if (!source) return [''];
@@ -16,9 +26,7 @@ export function splitContentIntoPages(content: string, approxCharsPerPage: numbe
     const wrapped = segment
       .split('\n')
       .map((line) => {
-        const trimmedLine = line.trim();
-        const isMarkdownImageLine = /^!\[[^\]]*]\([^)]+\)$/.test(trimmedLine);
-        if (isMarkdownImageLine) return line;
+        if (isMarkdownImageLine(line)) return line;
         if (line.length <= 120) return line;
         const parts: string[] = [];
         let rest = line;

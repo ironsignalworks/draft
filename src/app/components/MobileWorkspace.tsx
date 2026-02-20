@@ -18,9 +18,9 @@ import { Switch } from './ui/switch';
 import { Slider } from './ui/slider';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { toast } from 'sonner';
-import { SavedDocuments } from './SavedDocuments';
-import { SettingsPanel } from './SettingsPanel';
-import { TemplateGrid } from './TemplateGrid';
+import { SavedDocuments, type SavedDocumentRecord } from './SavedDocuments';
+import { SettingsPanel, type WorkspaceSettings } from './SettingsPanel';
+import { TemplateGrid, type TemplateDefinition, type TemplateId } from './TemplateGrid';
 import { markdownUrlTransform } from '../lib/markdown';
 
 type MobileMode = 'edit' | 'preview' | 'layout';
@@ -37,6 +37,14 @@ interface MobileWorkspaceProps {
   onOpenSavedDocs: () => void;
   onOpenSettings: () => void;
   onOpenExport: () => void;
+  selectedTemplateId?: TemplateId | null;
+  onSelectTemplate?: (template: TemplateDefinition) => void;
+  savedDocuments?: SavedDocumentRecord[];
+  onOpenSavedDocument?: (id: string) => void;
+  onDuplicateSavedDocument?: (id: string) => void;
+  onDeleteSavedDocument?: (id: string) => void;
+  workspaceSettings?: WorkspaceSettings;
+  onWorkspaceSettingsChange?: (next: WorkspaceSettings) => void;
 }
 
 export function MobileWorkspace({
@@ -50,6 +58,14 @@ export function MobileWorkspace({
   onOpenSavedDocs,
   onOpenSettings,
   onOpenExport,
+  selectedTemplateId = null,
+  onSelectTemplate,
+  savedDocuments = [],
+  onOpenSavedDocument,
+  onDuplicateSavedDocument,
+  onDeleteSavedDocument,
+  workspaceSettings,
+  onWorkspaceSettingsChange,
 }: MobileWorkspaceProps) {
   const [mode, setMode] = React.useState<MobileMode>('edit');
   const [isRenamingTitle, setIsRenamingTitle] = React.useState(false);
@@ -162,7 +178,7 @@ export function MobileWorkspace({
                 ) : (
                   <div className="space-y-2 text-center text-sm text-neutral-500">
                     <h3 className="text-base font-semibold text-neutral-800">Preview will appear here</h3>
-                    <p>As you add content, DocKernel will format it into pages automatically.</p>
+                    <p>As you add content, Draft will format it into pages automatically.</p>
                   </div>
                 )}
               </div>
@@ -289,9 +305,22 @@ export function MobileWorkspace({
   );
 
   const renderModeContent = () => {
-    if (utilityView === 'templates') return <TemplateGrid />;
-    if (utilityView === 'saved') return <SavedDocuments />;
-    if (utilityView === 'settings') return <SettingsPanel />;
+    if (utilityView === 'templates') {
+      return <TemplateGrid selectedTemplateId={selectedTemplateId} onSelectTemplate={onSelectTemplate} />;
+    }
+    if (utilityView === 'saved') {
+      return (
+        <SavedDocuments
+          documents={savedDocuments}
+          onOpenDocument={onOpenSavedDocument}
+          onDuplicateDocument={onDuplicateSavedDocument}
+          onDeleteDocument={onDeleteSavedDocument}
+        />
+      );
+    }
+    if (utilityView === 'settings') {
+      return <SettingsPanel settings={workspaceSettings} onChange={onWorkspaceSettingsChange} />;
+    }
 
     if (mode === 'edit') return renderEditorMode();
     if (mode === 'preview') return renderPreviewMode();
@@ -382,8 +411,8 @@ export function MobileWorkspace({
 
           <div className="min-w-0">
             <div className="mb-1 flex items-center justify-center gap-1.5">
-              <img src="/icon.svg" alt="DocKernel" className="h-4 w-4 shrink-0" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">DocKernel</span>
+              <img src="/icon.svg" alt="Draft" className="h-4 w-4 shrink-0" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Draft</span>
             </div>
             {isRenamingTitle ? (
               <input
@@ -474,3 +503,5 @@ export function MobileWorkspace({
     </div>
   );
 }
+
+

@@ -4,7 +4,7 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { FileDown, Settings, Copy, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { openPdfPrintPreview } from '../lib/export';
+import { exportPdfDocument } from '../lib/export';
 
 interface ExportPreset {
   id: string;
@@ -92,18 +92,22 @@ export function ExportPresets({ content }: ExportPresetsProps) {
   const handleExportWithPreset = (preset: ExportPreset, content: string) => {
     const quality = preset.settings.quality.toLowerCase() === 'maximum' ? 95 : preset.settings.quality.toLowerCase() === 'good' ? 75 : 60;
     const compression = preset.settings.compression.toLowerCase() !== 'none';
-    const ok = openPdfPrintPreview(content, {
+    const result = exportPdfDocument(content, {
       title: preset.name,
       quality,
       compression,
       includeMetadata: true,
       watermark: false,
     });
-    if (!ok) {
-      toast.error('Popup blocked. Allow popups to export PDF.');
+    if (result === 'failed') {
+      toast.error('Could not generate PDF file.');
       return;
     }
-    toast.success(`Export started with "${preset.name}"`);
+    if (result === 'print') {
+      toast.success(`Print dialog opened for "${preset.name}". Choose Save as PDF.`);
+      return;
+    }
+    toast.success(`Downloaded "${preset.name}"`);
   };
 
   return (

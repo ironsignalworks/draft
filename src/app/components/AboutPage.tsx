@@ -7,9 +7,9 @@ export function AboutPage() {
   return (
     <div className="h-full bg-white flex flex-col">
       <div className="px-6 py-4 border-b border-neutral-200">
-        <h2 className="text-lg font-semibold text-neutral-900">About DocKernel</h2>
+        <h2 className="text-lg font-semibold text-neutral-900">About Draft</h2>
         <p className="text-sm text-neutral-500 mt-1">
-          Browser-native publishing for Markdown and plain text.
+          Browser-native document editor for Markdown, plain text, and image pages.
         </p>
       </div>
 
@@ -19,8 +19,7 @@ export function AboutPage() {
             <div>
               <h3 className="text-base font-semibold text-neutral-900">What it does</h3>
               <p className="text-sm text-neutral-600 mt-2">
-                DocKernel helps you edit, preview, and export print-friendly PDFs
-                from Markdown, plain text, and image pages.
+                Draft lets you write or import content, preview fixed pages, and export share-ready PDF output directly in the browser.
               </p>
             </div>
 
@@ -29,10 +28,10 @@ export function AboutPage() {
             <div>
               <h3 className="text-base font-semibold text-neutral-900">Core features</h3>
               <ul className="text-sm text-neutral-600 mt-2 list-disc pl-5 space-y-1">
-                <li>Live Markdown editing and preview</li>
-                <li>Fixed-page document preview with zoom controls</li>
-                <li>Template-based document starts</li>
-                <li>Export presets for repeatable output</li>
+                <li>Continuous document editing with Markdown support</li>
+                <li>Fixed-page live preview with zoom, rulers, and image placement</li>
+                <li>Template starts, saved documents, and workspace preferences</li>
+                <li>PDF export with downloadable files and share links</li>
               </ul>
             </div>
 
@@ -50,3 +49,5 @@ export function AboutPage() {
     </div>
   );
 }
+
+

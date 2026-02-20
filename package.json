@@ -1,5 +1,5 @@
 {
-  "name": "dockernel",
+  "name": "draft",
   "private": true,
   "version": "0.0.1",
   "type": "module",
@@ -7,7 +7,7 @@
     "predeploy": "npm run build",
     "build:gh": "npm run build",
     "deploy": "gh-pages -d dist",
-    "build": "vite build --base=/dockernel/",
+    "build": "vite build --base=/draft/",
     "dev": "vite"
   },
   "dependencies": {
@@ -92,3 +92,5 @@
     }
   }
 }
+
+

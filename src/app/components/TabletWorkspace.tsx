@@ -19,9 +19,9 @@ import { Textarea } from './ui/textarea';
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
 import { Slider } from './ui/slider';
 import { Switch } from './ui/switch';
-import { SavedDocuments } from './SavedDocuments';
-import { SettingsPanel } from './SettingsPanel';
-import { TemplateGrid } from './TemplateGrid';
+import { SavedDocuments, type SavedDocumentRecord } from './SavedDocuments';
+import { SettingsPanel, type WorkspaceSettings } from './SettingsPanel';
+import { TemplateGrid, type TemplateDefinition, type TemplateId } from './TemplateGrid';
 import { analyzeDocument } from '../lib/preflight';
 import { toast } from 'sonner';
 import { markdownUrlTransform } from '../lib/markdown';
@@ -43,6 +43,14 @@ interface TabletWorkspaceProps {
   onOpenSavedDocs: () => void;
   onOpenSettings: () => void;
   onOpenExport: () => void;
+  selectedTemplateId?: TemplateId | null;
+  onSelectTemplate?: (template: TemplateDefinition) => void;
+  savedDocuments?: SavedDocumentRecord[];
+  onOpenSavedDocument?: (id: string) => void;
+  onDuplicateSavedDocument?: (id: string) => void;
+  onDeleteSavedDocument?: (id: string) => void;
+  workspaceSettings?: WorkspaceSettings;
+  onWorkspaceSettingsChange?: (next: WorkspaceSettings) => void;
 }
 
 export function TabletWorkspace({
@@ -57,6 +65,14 @@ export function TabletWorkspace({
   onOpenSavedDocs,
   onOpenSettings,
   onOpenExport,
+  selectedTemplateId = null,
+  onSelectTemplate,
+  savedDocuments = [],
+  onOpenSavedDocument,
+  onDuplicateSavedDocument,
+  onDeleteSavedDocument,
+  workspaceSettings,
+  onWorkspaceSettingsChange,
 }: TabletWorkspaceProps) {
   const [tabletMode, setTabletMode] = React.useState<TabletMode>('edit');
   const [utilityView, setUtilityView] = React.useState<UtilityView>('none');
@@ -167,8 +183,8 @@ export function TabletWorkspace({
 
         <div className="min-w-0">
           <div className="mb-1 flex items-center justify-center gap-1.5">
-            <img src="/icon.svg" alt="DocKernel" className="h-4 w-4 shrink-0" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">DocKernel</span>
+            <img src="/icon.svg" alt="Draft" className="h-4 w-4 shrink-0" />
+            <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Draft</span>
           </div>
           {isRenamingTitle ? (
             <input
@@ -206,9 +222,18 @@ export function TabletWorkspace({
   );
 
   const renderPortraitMode = () => {
-    if (utilityView === 'templates') return <TemplateGrid />;
-    if (utilityView === 'saved') return <SavedDocuments />;
-    if (utilityView === 'settings') return <SettingsPanel />;
+    if (utilityView === 'templates') return <TemplateGrid selectedTemplateId={selectedTemplateId} onSelectTemplate={onSelectTemplate} />;
+    if (utilityView === 'saved') {
+      return (
+        <SavedDocuments
+          documents={savedDocuments}
+          onOpenDocument={onOpenSavedDocument}
+          onDuplicateDocument={onDuplicateSavedDocument}
+          onDeleteDocument={onDeleteSavedDocument}
+        />
+      );
+    }
+    if (utilityView === 'settings') return <SettingsPanel settings={workspaceSettings} onChange={onWorkspaceSettingsChange} />;
 
     if (tabletMode === 'edit') {
       return (
@@ -386,7 +411,7 @@ export function TabletWorkspace({
   };
 
   const renderLandscapeSheetContent = () => {
-    if (landscapeSheet === 'templates') return <TemplateGrid />;
+    if (landscapeSheet === 'templates') return <TemplateGrid selectedTemplateId={selectedTemplateId} onSelectTemplate={onSelectTemplate} />;
 
     if (landscapeSheet === 'preflight') {
       return (
@@ -566,3 +591,5 @@ export function TabletWorkspace({
     </div>
   );
 }
+
+

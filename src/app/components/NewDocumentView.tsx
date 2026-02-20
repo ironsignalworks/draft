@@ -14,7 +14,7 @@ export function NewDocumentView({ onStartBlank, onOpenTemplates }: NewDocumentVi
     {
       label: 'STEP 1 - Editor',
       title: 'Write or import content',
-      text: 'DocKernel formats Markdown and plain text into structured pages as you type.',
+      text: 'Draft formats Markdown and plain text into structured pages as you type.',
     },
     {
       label: 'STEP 2 - Preview',
@@ -68,7 +68,7 @@ export function NewDocumentView({ onStartBlank, onOpenTemplates }: NewDocumentVi
           <div className="w-full max-w-2xl mx-auto">
             <div className="mb-12 px-1 sm:px-0">
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-neutral-900 mb-4 leading-tight break-words [overflow-wrap:anywhere]">
-                Welcome to DocKernel
+                Welcome to Draft
               </h1>
               <p className="text-base sm:text-lg text-neutral-600 break-words [overflow-wrap:anywhere]">
                 A browser-native publishing tool that transforms Markdown and plain text
@@ -163,3 +163,5 @@ export function NewDocumentView({ onStartBlank, onOpenTemplates }: NewDocumentVi
     </div>
   );
 }
+
+

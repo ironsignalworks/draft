@@ -269,8 +269,20 @@ export function PreviewPanel({
   const parseSingleImageMarkdown = (pageMarkdown: string): string | null => {
     const trimmed = pageMarkdown.trim();
     if (!trimmed) return null;
-    const match = trimmed.match(/^!\[[^\]]*]\(([^)\s]+)(?:\s+"[^"]*")?\)$/);
-    return match?.[1] ?? null;
+    const match = trimmed.match(/^!\[[^\]]*]\((.+)\)$/);
+    if (!match) return null;
+
+    const rawBody = match[1].trim();
+    if (!rawBody) return null;
+
+    const withOptionalTitle = rawBody.match(/^(.*\S)\s+("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')\s*$/);
+    const src = (withOptionalTitle ? withOptionalTitle[1] : rawBody).trim();
+    if (!src) return null;
+
+    if (src.startsWith('<') && src.endsWith('>') && src.length > 2) {
+      return src.slice(1, -1).trim();
+    }
+    return src;
   };
 
   return (
@@ -504,7 +516,7 @@ export function PreviewPanel({
                       <div className="text-neutral-500 text-center mt-32 space-y-2">
                         <h3 className="text-base font-semibold text-neutral-800">Preview will appear here</h3>
                         <p className="text-sm">
-                          As you add content, DocKernel will format it into pages automatically.
+                          As you add content, Draft will format it into pages automatically.
                         </p>
                       </div>
                     )}
@@ -531,3 +543,5 @@ export function PreviewPanel({
     </div>
   );
 }
+
+

@@ -27,9 +27,9 @@ import { toast } from 'sonner';
 const defaultMarkdown = '';
 
 const STORAGE_KEYS = {
-  savedDocs: 'dockernel_saved_documents',
-  workspaceSettings: 'dockernel_workspace_settings',
-  inspectorSettings: 'dockernel_inspector_settings',
+  savedDocs: 'draft_saved_documents',
+  workspaceSettings: 'draft_workspace_settings',
+  inspectorSettings: 'draft_inspector_settings',
 } as const;
 
 const defaultWorkspaceSettings: WorkspaceSettings = {
@@ -70,8 +70,6 @@ export default function App() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isStackedLayout, setIsStackedLayout] = useState(false);
-  const [stackedWorkspaceTab, setStackedWorkspaceTab] = useState<'editor' | 'preview' | 'inspector'>('preview');
   const [layoutFormat, setLayoutFormat] = useState<'zine' | 'book' | 'catalogue' | 'report' | 'custom'>('zine');
   const [pageSize, setPageSize] = useState<'a4' | 'a5' | 'letter' | 'legal'>('a4');
   const [fullBookPreview] = useState(false);
@@ -296,14 +294,11 @@ export default function App() {
           .join('\n');
 
   const renderMainContent = () => {
-    const useStackedPanels = isStackedLayout;
-
     if (activeNav === 'new' && !showEditor) {
       return (
         <NewDocumentView
           onStartBlank={() => {
             clearAndStartNewDocument();
-            setStackedWorkspaceTab('editor');
           }}
           onOpenTemplates={() => setActiveNav('templates')}
         />
@@ -335,69 +330,6 @@ export default function App() {
 
     if (activeNav === 'export') {
       return <ExportPresets content={content} />;
-    }
-
-    if (useStackedPanels) {
-      return (
-        <div className="h-full flex flex-col min-h-0">
-          <div className="border-b border-neutral-200 bg-white p-2 flex gap-2">
-            <button
-              type="button"
-              className={`h-8 px-3 text-xs rounded-md border shadow-sm ${
-                stackedWorkspaceTab === 'editor' ? 'border-neutral-900 bg-neutral-100 text-neutral-900' : 'border-neutral-300 text-neutral-600'
-              }`}
-              onClick={() => setStackedWorkspaceTab('editor')}
-            >
-              Editor
-            </button>
-            <button
-              type="button"
-              className={`h-8 px-3 text-xs rounded-md border shadow-sm ${
-                stackedWorkspaceTab === 'preview' ? 'border-neutral-900 bg-neutral-100 text-neutral-900' : 'border-neutral-300 text-neutral-600'
-              }`}
-              onClick={() => setStackedWorkspaceTab('preview')}
-            >
-              Preview
-            </button>
-            <button
-              type="button"
-              className={`h-8 px-3 text-xs rounded-md border shadow-sm ${
-                stackedWorkspaceTab === 'inspector' ? 'border-neutral-900 bg-neutral-100 text-neutral-900' : 'border-neutral-300 text-neutral-600'
-              }`}
-              onClick={() => setStackedWorkspaceTab('inspector')}
-            >
-              Inspector
-            </button>
-          </div>
-
-          <div className="flex-1 min-h-0 overflow-hidden">
-            {stackedWorkspaceTab === 'editor' && (
-              <EditorPanel
-                content={content}
-                onChange={setContent}
-                isDocumentLoaded={isDocumentLoaded}
-                onNewDocument={clearAndStartNewDocument}
-                onImportFile={handleImportFile}
-                editorFontSize={workspaceSettings.editorFontSize}
-              />
-            )}
-            {stackedWorkspaceTab === 'preview' && (
-              <PreviewPanel
-                content={filteredContent}
-                layoutFormat={layoutFormat}
-                pageSize={pageSize}
-                fullBookPreview={fullBookPreview}
-                previewPageCount={previewPageCount}
-                activePresetName={activePresetName}
-                inspectorSettings={inspectorSettings}
-              />
-            )}
-            {stackedWorkspaceTab === 'inspector' && (
-              <InspectorPanel settings={inspectorSettings} onChange={setInspectorSettings} />
-            )}
-          </div>
-        </div>
-      );
     }
 
     return (
@@ -459,6 +391,14 @@ export default function App() {
           onOpenSavedDocs={() => setActiveNav('saved')}
           onOpenSettings={() => setActiveNav('settings')}
           onOpenExport={() => setExportModalOpen(true)}
+          selectedTemplateId={selectedTemplateId}
+          onSelectTemplate={handleTemplateSelect}
+          savedDocuments={savedDocuments}
+          onOpenSavedDocument={handleOpenSavedDocument}
+          onDuplicateSavedDocument={handleDuplicateSavedDocument}
+          onDeleteSavedDocument={handleDeleteSavedDocument}
+          workspaceSettings={workspaceSettings}
+          onWorkspaceSettingsChange={setWorkspaceSettings}
         />
 
         <ExportModal
@@ -492,6 +432,14 @@ export default function App() {
           onOpenSavedDocs={() => setActiveNav('saved')}
           onOpenSettings={() => setActiveNav('settings')}
           onOpenExport={() => setExportModalOpen(true)}
+          selectedTemplateId={selectedTemplateId}
+          onSelectTemplate={handleTemplateSelect}
+          savedDocuments={savedDocuments}
+          onOpenSavedDocument={handleOpenSavedDocument}
+          onDuplicateSavedDocument={handleDuplicateSavedDocument}
+          onDeleteSavedDocument={handleDeleteSavedDocument}
+          workspaceSettings={workspaceSettings}
+          onWorkspaceSettingsChange={setWorkspaceSettings}
         />
 
         <ExportModal
@@ -538,8 +486,6 @@ export default function App() {
         <TopBar
           isSidebarOpen={isSidebarOpen}
           onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
-          isStackedLayout={isStackedLayout}
-          onToggleStackedLayout={() => setIsStackedLayout((prev) => !prev)}
           documentName={documentName}
           onDocumentNameChange={setDocumentName}
           onExportClick={() => setExportModalOpen(true)}
@@ -569,3 +515,5 @@ export default function App() {
     </div>
   );
 }
+
+

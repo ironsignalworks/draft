@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { Button } from './ui/button';
 import { splitContentIntoPages } from '../lib/paging';
 import { markdownUrlTransform } from '../lib/markdown';
-import { openPdfPrintPreview, type ExportSharePayload } from '../lib/export';
+import { exportPdfDocument, type ExportSharePayload } from '../lib/export';
 import { ArrowLeft, Download, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -55,13 +55,19 @@ export function ExportShareView({ payload }: ExportShareViewProps) {
               size="sm"
               className="bg-neutral-900 hover:bg-neutral-800"
               onClick={() => {
-                const ok = openPdfPrintPreview(payload.content, {
+                const result = exportPdfDocument(payload.content, {
                   ...payload.options,
                   title: payload.title,
                 });
-                if (!ok) {
-                  toast.error('Popup blocked. Allow popups to export PDF.');
+                if (result === 'failed') {
+                  toast.error('Could not generate PDF file.');
+                  return;
                 }
+                if (result === 'print') {
+                  toast.success('Print dialog opened with images. Choose Save as PDF.');
+                  return;
+                }
+                toast.success('PDF downloaded');
               }}
             >
               <Download className="w-4 h-4" />
@@ -84,4 +90,3 @@ export function ExportShareView({ payload }: ExportShareViewProps) {
     </div>
   );
 }
-

@@ -26,9 +26,9 @@ export function LeftSidebar({ activeNav, onNavChange, onExportClick, onImportFil
       {/* Logo */}
       <div className="p-6">
         <div className="flex items-center gap-3">
-          <img src={logoIcon} alt="DocKernel logo" className="h-8 w-8" />
+          <img src={logoIcon} alt="Draft logo" className="h-8 w-8" />
           <div>
-            <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">DocKernel</h1>
+            <h1 className="text-xl font-semibold text-neutral-900 tracking-tight">Draft</h1>
             <p className="text-xs text-neutral-500 mt-1">Publishing Tool</p>
           </div>
         </div>
@@ -95,3 +95,5 @@ export function LeftSidebar({ activeNav, onNavChange, onExportClick, onImportFil
     </div>
   );
 }
+
+

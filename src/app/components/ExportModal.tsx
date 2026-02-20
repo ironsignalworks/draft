@@ -8,7 +8,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
 import { Download, Link2 } from 'lucide-react';
 import { analyzeDocument } from '../lib/preflight';
-import { buildExportShareUrl, openPdfPrintPreview } from '../lib/export';
+import { buildExportShareUrl, exportPdfDocument } from '../lib/export';
 import { splitContentIntoPages } from '../lib/paging';
 import ReactMarkdown from 'react-markdown';
 import { markdownUrlTransform } from '../lib/markdown';
@@ -63,17 +63,19 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
                   <div className="text-center">
                     <h3 className="text-base font-semibold text-neutral-800">Preparing preview</h3>
                     <p className="mt-2 text-sm text-neutral-600">
-                      DocKernel is generating a final layout for export.
+                      Draft is generating a final layout for export.
                     </p>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {previewPages.map((page, index) => (
-                    <div key={`export-preview-${index + 1}`} className="bg-white rounded shadow-sm p-8 aspect-[1/1.414] overflow-hidden">
-                      <div className="text-xs text-neutral-400 mb-4">Page {index + 1}</div>
+                    <div key={`export-preview-${index + 1}`} className="relative bg-white rounded shadow-sm p-8 aspect-[1/1.414] overflow-hidden">
                       <div className="prose prose-sm max-w-none text-neutral-700">
                         <ReactMarkdown urlTransform={markdownUrlTransform}>{page}</ReactMarkdown>
+                      </div>
+                      <div className="pointer-events-none absolute bottom-3 right-4 text-[10px] text-neutral-400">
+                        {index + 1}
                       </div>
                     </div>
                   ))}
@@ -182,10 +184,10 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
                 className="w-full gap-2"
                 onClick={async () => {
                   const shareUrl = buildExportShareUrl({
-                    title: (documentName?.trim() || 'DocKernel Export').slice(0, 120),
+                    title: (documentName?.trim() || 'Draft Export').slice(0, 120),
                     content,
                     options: {
-                      title: (documentName?.trim() || 'DocKernel Export').slice(0, 120),
+                      title: (documentName?.trim() || 'Draft Export').slice(0, 120),
                       quality,
                       compression,
                       includeMetadata,
@@ -213,10 +215,10 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
                 className="w-full gap-2"
                 onClick={() => {
                   const shareUrl = buildExportShareUrl({
-                    title: (documentName?.trim() || 'DocKernel Export').slice(0, 120),
+                    title: (documentName?.trim() || 'Draft Export').slice(0, 120),
                     content,
                     options: {
-                      title: (documentName?.trim() || 'DocKernel Export').slice(0, 120),
+                      title: (documentName?.trim() || 'Draft Export').slice(0, 120),
                       quality,
                       compression,
                       includeMetadata,
@@ -238,18 +240,22 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
                 className="w-full gap-2 bg-neutral-900 hover:bg-neutral-800"
                 disabled={hasMajorIssues}
                 onClick={() => {
-                  const ok = openPdfPrintPreview(content, {
-                    title: (documentName?.trim() || 'DocKernel Export').slice(0, 120),
+                  const result = exportPdfDocument(content, {
+                    title: (documentName?.trim() || 'Draft Export').slice(0, 120),
                     quality,
                     compression,
                     includeMetadata,
                     watermark,
                   });
-                  if (!ok) {
-                    toast.error('Popup blocked. Allow popups to export PDF.');
+                  if (result === 'failed') {
+                    toast.error('Could not generate PDF file.');
                     return;
                   }
-                  toast.success('Print dialog opened. Choose Save as PDF.');
+                  if (result === 'print') {
+                    toast.success('Print dialog opened with images. Choose Save as PDF.');
+                    return;
+                  }
+                  toast.success('PDF downloaded');
                 }}
               >
                 <Download className="w-4 h-4" />
@@ -265,3 +271,5 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
     </Dialog>
   );
 }
+
+
