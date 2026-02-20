@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollArea } from './ui/scroll-area';
 import { Card } from './ui/card';
 import { FileText, BookOpen, Grid3x3 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Template {
   id: string;
@@ -78,6 +79,16 @@ const templates: Template[] = [
 ];
 
 export function TemplateGrid() {
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+
+  useEffect(() => {
+    if (!selectedTemplateId) return;
+    setIsPreviewLoading(true);
+    const timer = window.setTimeout(() => setIsPreviewLoading(false), 700);
+    return () => window.clearTimeout(timer);
+  }, [selectedTemplateId]);
+
   const categories = [
     { id: 'zine', label: 'Zine Templates' },
     { id: 'book', label: 'Book Templates' },
@@ -93,6 +104,24 @@ export function TemplateGrid() {
           Start with a pre-configured layout
         </p>
       </div>
+
+      {!selectedTemplateId && (
+        <div className="mx-6 mt-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+          <h3 className="text-sm font-semibold text-neutral-900">Choose a layout template</h3>
+          <p className="mt-1 text-sm text-neutral-600">
+            Templates define page structure, numbering, and spacing rules.
+          </p>
+        </div>
+      )}
+
+      {isPreviewLoading && (
+        <div className="mx-6 mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+          <h3 className="text-sm font-semibold text-neutral-900">Template preview loading</h3>
+          <p className="mt-1 text-sm text-neutral-600">
+            Switch templates to reflow the document instantly.
+          </p>
+        </div>
+      )}
 
       <ScrollArea className="flex-1">
         <div className="p-6 space-y-8">
@@ -110,7 +139,13 @@ export function TemplateGrid() {
                   {categoryTemplates.map((template) => (
                     <Card
                       key={template.id}
-                      className="p-6 cursor-pointer hover:shadow-lg transition-shadow border-neutral-200 hover:border-neutral-300"
+                      className={`p-6 cursor-pointer hover:shadow-lg transition-shadow border-neutral-200 hover:border-neutral-300 ${
+                        selectedTemplateId === template.id ? 'ring-1 ring-neutral-900 border-neutral-900' : ''
+                      }`}
+                      onClick={() => {
+                        setSelectedTemplateId(template.id);
+                        toast.success('Layout updated');
+                      }}
                     >
                       {/* Preview Thumbnail */}
                       <div className="aspect-[3/4] bg-neutral-100 rounded-lg mb-4 flex items-center justify-center border border-neutral-200">

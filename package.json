@@ -1,13 +1,13 @@
 {
-  "name": "@figma/my-make-file",
+  "name": "dockernel",
   "private": true,
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "predeploy": "npm run build:gh",
-    "build:gh": "vite build --base=./",
+    "predeploy": "npm run build",
+    "build:gh": "npm run build",
     "deploy": "gh-pages -d dist",
-    "build": "vite build",
+    "build": "vite build --base=/dockernel/",
     "dev": "vite"
   },
   "dependencies": {

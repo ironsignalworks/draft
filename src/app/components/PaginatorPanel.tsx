@@ -7,9 +7,43 @@ import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { analyzeDocument } from '../lib/preflight';
 
-export function PaginatorPanel() {
+interface PaginatorPanelProps {
+  content?: string;
+}
+
+export function PaginatorPanel({ content = '' }: PaginatorPanelProps) {
   const [resetSeed, setResetSeed] = useState(0);
+  const hasDocumentStructure = content.trim().length > 0 && /^#{1,6}\s|\n{2,}|^[-*]\s|^\d+\.\s/m.test(content);
+  const hasCatalogueItems = /!\[[^\]]*]\([^)]+\)|^[-*]\s|^\d+\.\s/m.test(content);
+  const preflight = analyzeDocument(content);
+  const preflightMeta =
+    preflight.severity === 'major'
+      ? {
+          state: 'Major issues',
+          title: 'Layout requires attention',
+          subtext: 'Resolve overflow or missing assets before exporting.',
+          tone: 'text-amber-700',
+          icon: AlertCircle,
+        }
+      : preflight.severity === 'minor'
+        ? {
+            state: 'Minor issues',
+            title: 'Export possible with warnings',
+            subtext: 'Some sections may not flow cleanly across pages.',
+            tone: 'text-amber-700',
+            icon: AlertCircle,
+          }
+        : {
+            state: 'All good',
+            title: 'Layout ready for export',
+            subtext: 'No issues detected in page flow or assets.',
+            tone: 'text-green-700',
+            icon: CheckCircle2,
+          };
+  const StatusIcon = preflightMeta.icon;
 
   return (
     <div className="h-full bg-white flex flex-col">
@@ -24,7 +58,10 @@ export function PaginatorPanel() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setResetSeed((prev) => prev + 1)}
+          onClick={() => {
+            setResetSeed((prev) => prev + 1);
+            toast.success('Flow rules applied');
+          }}
         >
           Reset Layout
         </Button>
@@ -32,23 +69,41 @@ export function PaginatorPanel() {
 
       <ScrollArea className="flex-1">
         <div key={resetSeed} className="p-6 space-y-8">
+          {!hasDocumentStructure && (
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+              <h3 className="text-sm font-semibold text-neutral-900">Paginator ready</h3>
+              <p className="mt-1 text-sm text-neutral-600">
+                As your document grows, page flow rules will apply automatically.
+              </p>
+            </div>
+          )}
+
+          {!hasCatalogueItems && (
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+              <h3 className="text-sm font-semibold text-neutral-900">No catalogue items detected</h3>
+              <p className="mt-1 text-sm text-neutral-600">
+                Add sections with images or lists to enable catalogue layout options.
+              </p>
+            </div>
+          )}
+
           {/* Format Section */}
           <div className="space-y-4">
             <Label className="text-xs uppercase tracking-wide text-neutral-500">Output Format</Label>
             <div className="grid grid-cols-2 gap-3">
-              <button className="px-4 py-3 rounded-lg border-2 border-blue-500 bg-blue-50 text-sm font-medium text-blue-900 transition-colors">
+              <button className="px-4 py-3 rounded-md border-2 border-blue-500 bg-blue-50 shadow-sm text-sm font-medium text-blue-900 transition-colors">
                 Zine
               </button>
-              <button className="px-4 py-3 rounded-lg border border-neutral-300 text-sm font-medium text-neutral-700 hover:border-neutral-400 transition-colors">
+              <button className="px-4 py-3 rounded-md border border-neutral-300 bg-white shadow-sm text-sm font-medium text-neutral-700 hover:border-neutral-400 transition-colors">
                 Book
               </button>
-              <button className="px-4 py-3 rounded-lg border border-neutral-300 text-sm font-medium text-neutral-700 hover:border-neutral-400 transition-colors">
+              <button className="px-4 py-3 rounded-md border border-neutral-300 bg-white shadow-sm text-sm font-medium text-neutral-700 hover:border-neutral-400 transition-colors">
                 Catalogue
               </button>
-              <button className="px-4 py-3 rounded-lg border border-neutral-300 text-sm font-medium text-neutral-700 hover:border-neutral-400 transition-colors">
+              <button className="px-4 py-3 rounded-md border border-neutral-300 bg-white shadow-sm text-sm font-medium text-neutral-700 hover:border-neutral-400 transition-colors">
                 Report
               </button>
-              <button className="px-4 py-3 rounded-lg border border-neutral-300 text-sm font-medium text-neutral-700 hover:border-neutral-400 transition-colors col-span-2">
+              <button className="px-4 py-3 rounded-md border border-neutral-300 bg-white shadow-sm text-sm font-medium text-neutral-700 hover:border-neutral-400 transition-colors col-span-2">
                 Custom
               </button>
             </div>
@@ -188,19 +243,18 @@ export function PaginatorPanel() {
             
             <div className="rounded-lg border border-neutral-200 p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <span className="text-sm text-neutral-700">No overflow warnings</span>
+                <StatusIcon className={`w-4 h-4 ${preflightMeta.tone}`} />
+                <span className="text-xs uppercase tracking-wide text-neutral-500">{preflightMeta.state}</span>
               </div>
+              <div className={`text-sm font-medium ${preflightMeta.tone}`}>{preflightMeta.title}</div>
+              <p className="text-sm text-neutral-600">{preflightMeta.subtext}</p>
 
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <span className="text-sm text-neutral-700">All fonts available</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-amber-600" />
-                <span className="text-sm text-neutral-700">2 images missing</span>
-              </div>
+              {preflight.issues.map((issue) => (
+                <div key={issue.id} className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
+                  <div className="text-sm font-medium text-neutral-800">{issue.title}</div>
+                  <p className="mt-1 text-xs text-neutral-600">{issue.text}</p>
+                </div>
+              ))}
 
               <Separator />
 

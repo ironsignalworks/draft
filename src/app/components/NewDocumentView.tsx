@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { FileText, Layout, Zap, BookOpen } from 'lucide-react';
@@ -10,6 +10,35 @@ interface NewDocumentViewProps {
 }
 
 export function NewDocumentView({ onStartBlank, onOpenTemplates }: NewDocumentViewProps) {
+  const [step, setStep] = useState(0);
+  const onboardingSteps = [
+    {
+      label: 'STEP 1 — Editor',
+      title: 'Write or import content',
+      text: 'DocKernel formats Markdown and plain text into structured pages as you type.',
+    },
+    {
+      label: 'STEP 2 — Preview',
+      title: 'Live layout preview',
+      text: 'This view shows exactly how your document will appear when exported.',
+    },
+    {
+      label: 'STEP 3 — Paginator',
+      title: 'Control page flow',
+      text: 'Use Paginator to switch between book, zine, or catalogue formats and adjust layout rules.',
+    },
+    {
+      label: 'STEP 4 — Templates',
+      title: 'Try different layouts',
+      text: 'Templates instantly reflow your document into new formats without changing the content.',
+    },
+    {
+      label: 'STEP 5 — Export',
+      title: 'Finalize output',
+      text: 'Open the export preview to download a print-ready PDF that matches the layout exactly.',
+    },
+  ] as const;
+
   const features = [
     {
       icon: <FileText className="w-6 h-6" />,
@@ -65,6 +94,45 @@ export function NewDocumentView({ onStartBlank, onOpenTemplates }: NewDocumentVi
             >
               Apply Template
             </Button>
+          </div>
+
+          <div className="mb-12">
+            <Card className="max-w-2xl mx-auto p-5 text-left border-neutral-200 shadow-sm">
+              <p className="text-xs uppercase tracking-wide text-neutral-500">{onboardingSteps[step].label}</p>
+              <h3 className="mt-2 text-lg font-semibold text-neutral-900">{onboardingSteps[step].title}</h3>
+              <p className="mt-2 text-sm text-neutral-600">{onboardingSteps[step].text}</p>
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  {onboardingSteps.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`h-2 w-2 rounded-full ${i === step ? 'bg-neutral-900' : 'bg-neutral-300'}`}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStep((prev) => Math.max(0, prev - 1))}
+                    disabled={step === 0}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStep((prev) => Math.min(onboardingSteps.length - 1, prev + 1))}
+                    disabled={step === onboardingSteps.length - 1}
+                  >
+                    Next
+                  </Button>
+                  <Button size="sm" onClick={onStartBlank}>
+                    Start editing
+                  </Button>
+                </div>
+              </div>
+            </Card>
           </div>
 
           {/* Features Grid */}

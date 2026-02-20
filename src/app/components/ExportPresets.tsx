@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollArea } from './ui/scroll-area';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { FileDown, Settings, Copy, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ExportPreset {
   id: string;
@@ -15,7 +16,7 @@ interface ExportPreset {
   };
 }
 
-const presets: ExportPreset[] = [
+const initialPresets: ExportPreset[] = [
   {
     id: '1',
     name: 'High Quality Print',
@@ -43,18 +44,36 @@ const presets: ExportPreset[] = [
 ];
 
 export function ExportPresets() {
+  const [presets, setPresets] = useState<ExportPreset[]>(initialPresets);
+
+  const handleSaveCurrentPreset = () => {
+    const nextIndex = presets.length + 1;
+    const newPreset: ExportPreset = {
+      id: crypto.randomUUID(),
+      name: `Current Preset ${nextIndex}`,
+      description: 'Saved from current export configuration',
+      settings: { dpi: 150, compression: 'Medium', quality: 'High' },
+    };
+    setPresets((prev) => [newPreset, ...prev]);
+    toast.success('Preset saved');
+  };
+
   return (
     <div className="h-full bg-white flex flex-col">
       {/* Header */}
       <div className="px-6 py-4 border-b border-neutral-200 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-neutral-900">Export Profiles</h2>
+          <h2 className="text-lg font-semibold text-neutral-900">Export Presets</h2>
           <p className="text-sm text-neutral-500 mt-1">
-            Manage your custom export configurations
+            Manage your saved export configurations
           </p>
         </div>
-        <Button size="sm" className="bg-neutral-900 hover:bg-neutral-800">
-          Create Profile
+        <Button
+          size="sm"
+          className="bg-neutral-900 hover:bg-neutral-800"
+          onClick={handleSaveCurrentPreset}
+        >
+          Save current preset
         </Button>
       </div>
 
@@ -123,16 +142,19 @@ export function ExportPresets() {
           ))}
 
           {/* Custom Preset Card */}
-          <Card className="p-8 border-2 border-dashed border-neutral-300 hover:border-neutral-400 transition-colors cursor-pointer">
+          <Card
+            className="p-8 border-2 border-dashed border-neutral-300 hover:border-neutral-400 transition-colors cursor-pointer"
+            onClick={handleSaveCurrentPreset}
+          >
             <div className="text-center">
               <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center mx-auto mb-3">
                 <FileDown className="w-6 h-6 text-neutral-500" />
               </div>
               <h3 className="font-semibold text-neutral-900 mb-1">
-                Create Export Profile
+                Save current preset
               </h3>
               <p className="text-sm text-neutral-500">
-                Configure your own export settings
+                Capture the current settings for reuse
               </p>
             </div>
           </Card>

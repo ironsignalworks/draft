@@ -1,7 +1,7 @@
 
   # DocKernel UI Design
 
-  This is a code bundle for DocKernel UI Design. The original project is available at https://www.figma.com/design/BU8E1Y2o2CkEe8dA0dZq6y/DocKernel-UI-Design.
+  This is a code bundle for DocKernel UI Design.
 
   ## Running the code
 
@@ -21,6 +21,8 @@
   1. Push this repo to GitHub.
   2. In GitHub, go to `Settings > Pages`.
   3. Under **Build and deployment**, set **Source** to `GitHub Actions`.
+  4. Your site will publish at:
+     `https://ironsignalworks.github.io/dockernel/`
 
   ### Manual deploy command
 

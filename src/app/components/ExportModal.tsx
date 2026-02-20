@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
@@ -6,79 +6,124 @@ import { Switch } from './ui/switch';
 import { Label } from './ui/label';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
-import { Download, CheckCircle } from 'lucide-react';
+import { Download } from 'lucide-react';
+import { analyzeDocument } from '../lib/preflight';
+import { toast } from 'sonner';
 
 interface ExportModalProps {
   open: boolean;
   onClose: () => void;
+  content: string;
+  onReviewLayout: () => void;
 }
 
-export function ExportModal({ open, onClose }: ExportModalProps) {
+export function ExportModal({ open, onClose, content, onReviewLayout }: ExportModalProps) {
+  const [isPreparingPreview, setIsPreparingPreview] = useState(false);
+  const preflight = analyzeDocument(content);
+  const hasMajorIssues = preflight.severity === 'major';
+
+  useEffect(() => {
+    if (!open) return;
+    setIsPreparingPreview(true);
+    const timer = window.setTimeout(() => {
+      setIsPreparingPreview(false);
+      toast.success('Final layout generated');
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [open]);
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl h-[80vh] gap-0 p-0">
         <DialogHeader className="px-6 pt-6 pb-4">
-          <DialogTitle className="text-xl">Export Document</DialogTitle>
+          <DialogTitle className="text-xl">Export document</DialogTitle>
+          <p className="text-sm text-neutral-500">Preview and finalize output.</p>
         </DialogHeader>
 
         <div className="flex gap-6 flex-1 overflow-hidden px-6 pb-6">
           {/* Preview */}
           <div className="flex-1 flex flex-col">
-            <ScrollArea className="flex-1 bg-neutral-100 rounded-lg p-6">
-              <div className="space-y-4">
-                {/* Page previews */}
-                {[1, 2, 3, 4].map((page) => (
-                  <div key={page} className="bg-white rounded shadow-sm p-8 aspect-[1/1.414]">
-                    <div className="text-xs text-neutral-400 mb-4">Page {page}</div>
-                    <div className="space-y-2">
-                      <div className="h-3 bg-neutral-200 rounded w-3/4" />
-                      <div className="h-3 bg-neutral-200 rounded w-full" />
-                      <div className="h-3 bg-neutral-200 rounded w-5/6" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-            <div className="mt-3 flex items-center gap-2 text-sm text-neutral-600">
-              <CheckCircle className="w-4 h-4 text-green-600" />
-              Preview matches export exactly
+            <div className="mb-3">
+              <Label className="text-xs uppercase tracking-wide text-neutral-500">Final preview</Label>
             </div>
+            <ScrollArea className="flex-1 bg-neutral-100 rounded-lg p-6">
+              {isPreparingPreview ? (
+                <div className="h-full min-h-[320px] flex items-center justify-center">
+                  <div className="text-center">
+                    <h3 className="text-base font-semibold text-neutral-800">Preparing preview</h3>
+                    <p className="mt-2 text-sm text-neutral-600">
+                      DocKernel is generating a final layout for export.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Page previews */}
+                  {[1, 2, 3, 4].map((page) => (
+                    <div key={page} className="bg-white rounded shadow-sm p-8 aspect-[1/1.414]">
+                      <div className="text-xs text-neutral-400 mb-4">Page {page}</div>
+                      <div className="space-y-2">
+                        <div className="h-3 bg-neutral-200 rounded w-3/4" />
+                        <div className="h-3 bg-neutral-200 rounded w-full" />
+                        <div className="h-3 bg-neutral-200 rounded w-5/6" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
           </div>
 
           {/* Settings */}
           <div className="w-80 flex flex-col">
             <ScrollArea className="flex-1">
               <div className="space-y-6 pr-2">
+                {hasMajorIssues && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+                    <h3 className="text-sm font-semibold text-amber-900">Export paused</h3>
+                    <p className="text-sm text-amber-800">
+                      Resolve layout warnings shown in Preflight to ensure a clean output.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        onClose();
+                        onReviewLayout();
+                      }}
+                    >
+                      Review layout
+                    </Button>
+                  </div>
+                )}
+
+                {preflight.hasLargeDocument && (
+                  <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+                    <h3 className="text-sm font-semibold text-neutral-900">Large document detected</h3>
+                    <p className="mt-1 text-sm text-neutral-600">
+                      Rendering may take a moment. Consider enabling compression before export.
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   <Label className="text-xs uppercase tracking-wide text-neutral-500">
                     Page Count
                   </Label>
-                  <div className="text-2xl font-semibold text-neutral-900">24 pages</div>
+                  <div className="text-2xl font-semibold text-neutral-900">12 pages</div>
                 </div>
 
                 <Separator />
 
                 <div className="space-y-3">
                   <Label className="text-xs uppercase tracking-wide text-neutral-500">
-                    Export Preset
+                    Quality
                   </Label>
-                  <select className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm bg-white">
-                    <option>High Quality Print</option>
-                    <option>Screen PDF</option>
-                    <option>Compressed</option>
-                    <option>Press Ready</option>
-                  </select>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-3">
-                  <Label className="text-xs uppercase tracking-wide text-neutral-500">
-                    Compression
-                  </Label>
+                  <p className="text-xs text-neutral-500">Higher quality increases file size.</p>
                   <div>
                     <div className="flex justify-between mb-2">
-                      <span className="text-sm text-neutral-700">Quality</span>
+                      <span className="text-sm text-neutral-700">Output quality</span>
                       <span className="text-sm text-neutral-500">High</span>
                     </div>
                     <Slider defaultValue={[85]} max={100} step={5} />
@@ -88,13 +133,12 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
                 <Separator />
 
                 <div className="space-y-3">
-                  <Label className="text-xs uppercase tracking-wide text-neutral-500">
-                    DPI
-                  </Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button variant="outline" size="sm">72</Button>
-                    <Button variant="outline" size="sm" className="bg-neutral-100">150</Button>
-                    <Button variant="outline" size="sm">300</Button>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm text-neutral-700">Compression</Label>
+                      <p className="mt-1 text-xs text-neutral-500">Reduce file size for sharing.</p>
+                    </div>
+                    <Switch defaultChecked />
                   </div>
                 </div>
 
@@ -102,39 +146,38 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-sm text-neutral-700">Watermark</Label>
-                    <Switch />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm text-neutral-700">Include metadata</Label>
-                    <Switch defaultChecked />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm text-neutral-700">Embed fonts</Label>
+                    <div>
+                      <Label className="text-sm text-neutral-700">Include metadata</Label>
+                      <p className="mt-1 text-xs text-neutral-500">Adds title and author info to PDF.</p>
+                    </div>
                     <Switch defaultChecked />
                   </div>
                 </div>
 
                 <Separator />
 
-                <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wide text-neutral-500">
-                    Estimated Size
-                  </Label>
-                  <div className="text-lg font-semibold text-neutral-900">2.4 MB</div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm text-neutral-700">Watermark</Label>
+                      <p className="mt-1 text-xs text-neutral-500">Add a faint mark to each page.</p>
+                    </div>
+                    <Switch />
+                  </div>
                 </div>
               </div>
             </ScrollArea>
 
             <div className="mt-6 space-y-2">
-              <Button className="w-full gap-2 bg-neutral-900 hover:bg-neutral-800">
+              <Button
+                className="w-full gap-2 bg-neutral-900 hover:bg-neutral-800"
+                disabled={hasMajorIssues}
+              >
                 <Download className="w-4 h-4" />
-                Download PDF
+                Download final PDF
               </Button>
               <Button variant="outline" className="w-full" onClick={onClose}>
-                Cancel
+                Back to document
               </Button>
             </div>
           </div>

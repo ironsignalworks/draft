@@ -29,6 +29,7 @@ export default function App() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const isDocumentLoaded = showEditor || content.trim().length > 0 || documentName.trim().length > 0;
 
   const handleImportFile = async (file: File) => {
     const maxSizeBytes = 2 * 1024 * 1024;
@@ -109,19 +110,7 @@ export default function App() {
       return (
         <div className="flex h-full min-w-0">
           <div className="flex-1 min-w-0">
-            <ResizablePanelGroup direction="vertical" className="min-w-0">
-              {/* Preview */}
-              <ResizablePanel defaultSize={70} minSize={35}>
-                <PreviewPanel content={content} />
-              </ResizablePanel>
-
-              <ResizableHandle className="h-px bg-neutral-200" />
-
-              {/* Editor */}
-              <ResizablePanel defaultSize={30} minSize={20}>
-                <EditorPanel content={content} onChange={setContent} />
-              </ResizablePanel>
-            </ResizablePanelGroup>
+            <SavedDocuments />
           </div>
 
           {/* Paginator Panel on Right */}
@@ -137,7 +126,17 @@ export default function App() {
       <ResizablePanelGroup direction="horizontal">
         {/* Editor */}
         <ResizablePanel defaultSize={25} minSize={20}>
-          <EditorPanel content={content} onChange={setContent} />
+          <EditorPanel
+            content={content}
+            onChange={setContent}
+            isDocumentLoaded={isDocumentLoaded}
+            onNewDocument={() => {
+              setShowEditor(true);
+              setDocumentName('');
+              setContent('');
+            }}
+            onImportFile={handleImportFile}
+          />
         </ResizablePanel>
 
         <ResizableHandle className="w-px bg-neutral-200" />
@@ -188,7 +187,15 @@ export default function App() {
       </div>
 
       {/* Export Modal */}
-      <ExportModal open={exportModalOpen} onClose={() => setExportModalOpen(false)} />
+      <ExportModal
+        open={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        content={content}
+        onReviewLayout={() => {
+          setShowEditor(true);
+          setActiveNav('paginator');
+        }}
+      />
 
       {/* Toast Notifications */}
       <Toaster />
