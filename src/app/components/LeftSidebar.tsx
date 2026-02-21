@@ -2,7 +2,7 @@ import React from 'react';
 import { FileText, Save, Settings, Info, Download, Upload } from 'lucide-react';
 import { Separator } from './ui/separator';
 import { Button } from './ui/button';
-import logoIcon from '../../../icon.svg';
+import logoIcon from '../../../icon-app.svg';
 
 interface LeftSidebarProps {
   activeNav: string;

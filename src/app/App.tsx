@@ -78,6 +78,7 @@ export default function App() {
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
   const [workspaceSettings, setWorkspaceSettings] = useState<WorkspaceSettings>(defaultWorkspaceSettings);
   const [inspectorSettings, setInspectorSettings] = useState<InspectorSettings>(defaultInspectorSettings);
+  const [lastProjectSavedAt, setLastProjectSavedAt] = useState<number | null>(null);
   const importedImageUrlsRef = useRef<string[]>([]);
   const sharePayload = readExportSharePayloadFromLocation();
 
@@ -197,6 +198,7 @@ export default function App() {
     const timer = window.setTimeout(() => {
       const savedId = saveDocumentSnapshot(activeDocumentId, documentName, content);
       if (!activeDocumentId) setActiveDocumentId(savedId);
+      setLastProjectSavedAt(Date.now());
     }, 700);
 
     return () => window.clearTimeout(timer);
@@ -427,6 +429,7 @@ export default function App() {
           content={content}
           documentName={documentName}
           inspectorSettings={inspectorSettings}
+          projectSavedAt={lastProjectSavedAt}
           onReviewLayout={() => {
             setShowEditor(true);
             setActiveNav('new');
@@ -466,6 +469,7 @@ export default function App() {
           content={content}
           documentName={documentName}
           inspectorSettings={inspectorSettings}
+          projectSavedAt={lastProjectSavedAt}
           onReviewLayout={() => {
             setShowEditor(true);
             setActiveNav('new');
@@ -525,6 +529,7 @@ export default function App() {
         content={content}
         documentName={documentName}
         inspectorSettings={inspectorSettings}
+        projectSavedAt={lastProjectSavedAt}
         onReviewLayout={() => {
           setShowEditor(true);
           setActiveNav('new');

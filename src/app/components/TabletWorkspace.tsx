@@ -162,7 +162,7 @@ export function TabletWorkspace({
 
         <div className="min-w-0">
           <div className="mb-1 flex items-center justify-center gap-1.5">
-            <img src="/icon.svg" alt="Draft" className="h-4 w-4 shrink-0" />
+            <img src="/icon-app.svg" alt="Draft" className="h-4 w-4 shrink-0" />
             <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Draft</span>
           </div>
           {isRenamingTitle ? (

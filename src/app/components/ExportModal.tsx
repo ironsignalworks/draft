@@ -22,14 +22,16 @@ interface ExportModalProps {
   documentName?: string;
   onReviewLayout: () => void;
   inspectorSettings?: InspectorSettings;
+  projectSavedAt?: number | null;
 }
 
-export function ExportModal({ open, onClose, content, documentName, onReviewLayout, inspectorSettings }: ExportModalProps) {
+export function ExportModal({ open, onClose, content, documentName, onReviewLayout, inspectorSettings, projectSavedAt }: ExportModalProps) {
   const [isPreparingPreview, setIsPreparingPreview] = useState(false);
   const [quality, setQuality] = useState(inspectorSettings?.exportQuality ?? 85);
   const [compression, setCompression] = useState(inspectorSettings?.compression ?? true);
   const [includeMetadata, setIncludeMetadata] = useState(inspectorSettings?.includeMetadata ?? true);
   const [watermark, setWatermark] = useState(inspectorSettings?.watermark ?? false);
+  const [donationTrigger, setDonationTrigger] = useState<'export' | 'share' | 'saved' | null>(null);
   const preflight = analyzeDocument(content);
   const hasMajorIssues = preflight.severity === 'major';
   const estimatedPages = Math.max(1, Math.ceil(Math.max(content.trim().length, 1) / 1800));
@@ -37,6 +39,7 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
 
   useEffect(() => {
     if (!open) return;
+    setDonationTrigger(null);
     setQuality(inspectorSettings?.exportQuality ?? 85);
     setCompression(inspectorSettings?.compression ?? true);
     setIncludeMetadata(inspectorSettings?.includeMetadata ?? true);
@@ -48,6 +51,12 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
     }, 900);
     return () => window.clearTimeout(timer);
   }, [open, inspectorSettings]);
+
+  useEffect(() => {
+    if (!open || !projectSavedAt) return;
+    if (Date.now() - projectSavedAt > 5000) return;
+    setDonationTrigger('saved');
+  }, [open, projectSavedAt]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -148,6 +157,33 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
 
                 <Separator />
 
+                {donationTrigger && (
+                  <>
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 space-y-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                        {donationTrigger === 'export'
+                          ? 'After export finished'
+                          : donationTrigger === 'share'
+                            ? 'After share generated'
+                            : 'After project saved'}
+                      </p>
+                      <h3 className="text-sm font-semibold text-emerald-900">Support Iron Signal Works</h3>
+                      <p className="text-sm text-emerald-900/90">
+                        Iron Signal Works tools stay free, independent, and ad-free because some users choose to support them.
+                      </p>
+                      <a
+                        href="https://donate.stripe.com/4gMdR25le5GXenHbrT5Ne00"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-800"
+                      >
+                        Donate via Stripe
+                      </a>
+                    </div>
+                    <Separator />
+                  </>
+                )}
+
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
@@ -208,6 +244,7 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
                   try {
                     await navigator.clipboard.writeText(shareUrl);
                     toast.success('Export link copied');
+                    setDonationTrigger('share');
                   } catch {
                     toast.error('Could not copy export link');
                   }
@@ -237,6 +274,7 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
                     return;
                   }
                   window.open(shareUrl, '_blank', 'noopener,noreferrer');
+                  setDonationTrigger('share');
                 }}
               >
                 <Link2 className="w-4 h-4" />
@@ -259,9 +297,11 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
                   }
                   if (result === 'print') {
                     toast.success('Print dialog opened with images. Choose Save as PDF.');
+                    setDonationTrigger('export');
                     return;
                   }
                   toast.success('PDF downloaded');
+                  setDonationTrigger('export');
                 }}
               >
                 <Download className="w-4 h-4" />

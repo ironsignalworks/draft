@@ -37,6 +37,23 @@ export function AboutPage() {
 
             <Separator className="bg-neutral-200" />
 
+            <div>
+              <h3 className="text-base font-semibold text-neutral-900">Support</h3>
+              <p className="text-sm text-neutral-600 mt-2">
+                Iron Signal Works tools stay free, independent, and ad-free because some users choose to support them.
+              </p>
+              <a
+                href="https://donate.stripe.com/4gMdR25le5GXenHbrT5Ne00"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex mt-3 rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-800 transition-colors"
+              >
+                Donate via Stripe
+              </a>
+            </div>
+
+            <Separator className="bg-neutral-200" />
+
             <p className="text-xs text-neutral-500">
               All content shown in this prototype runs locally in your browser.
             </p>
