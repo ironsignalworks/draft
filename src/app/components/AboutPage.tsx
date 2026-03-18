@@ -1,16 +1,11 @@
 import React from 'react';
-import { ErrorButton } from './ErrorButton';
 import { useUser } from '../hooks/useUser';
 import { Card } from './ui/card';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 
-type ProbeMode = 'ok' | 'slow' | 'error' | 'invalid' | 'timeout' | 'empty';
-
 export function AboutPage() {
-  const [probeEnabled, setProbeEnabled] = React.useState(false);
-  const [probeMode, setProbeMode] = React.useState<ProbeMode>('ok');
-  const probe = useUser({ mode: probeMode, enabled: probeEnabled });
+  useUser({ mode: 'ok', enabled: false });
 
   return (
     <div className="h-full bg-white flex flex-col">
@@ -45,74 +40,6 @@ export function AboutPage() {
 
             <Separator className="bg-neutral-200" />
 
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-base font-semibold text-neutral-900">Runtime health check</h3>
-                {import.meta.env.DEV && (
-                  <select
-                    value={probeMode}
-                    onChange={(event) => setProbeMode(event.target.value as ProbeMode)}
-                    className="h-9 rounded-md border border-neutral-300 bg-white px-2 text-xs text-neutral-700"
-                    aria-label="Probe mode"
-                  >
-                    <option value="ok">OK</option>
-                    <option value="slow">Slow</option>
-                    <option value="error">500 error</option>
-                    <option value="invalid">Invalid payload</option>
-                    <option value="timeout">Timeout</option>
-                    <option value="empty">Empty payload</option>
-                  </select>
-                )}
-              </div>
-              <p className="text-sm text-neutral-600">
-                This check demonstrates loading, empty, error, and success behaviors with a safe retry.
-              </p>
-              <div className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
-                {probe.state === 'loading' && (
-                  <p className="text-sm text-neutral-600">Loading status...</p>
-                )}
-                {probe.state === 'empty' && (
-                  <p className="text-sm text-neutral-600">No status loaded yet. Run the check to verify API behavior.</p>
-                )}
-                {probe.state === 'error' && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-red-700">Data temporarily unavailable</p>
-                    <p className="text-xs text-neutral-600">{probe.error ?? 'Try again later.'}</p>
-                  </div>
-                )}
-                {probe.state === 'success' && probe.data && (
-                  <div className="space-y-1">
-                    <p className="text-sm text-neutral-800">Connected as {probe.data.name}</p>
-                    <p className="text-xs text-neutral-600">{probe.data.email}</p>
-                  </div>
-                )}
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setProbeEnabled(true);
-                      probe.refetch();
-                    }}
-                    className="rounded-md bg-neutral-900 px-3 py-2 text-xs font-medium text-white hover:bg-neutral-800 transition-colors"
-                  >
-                    {probeEnabled ? 'Retry check' : 'Run check'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setProbeEnabled(false);
-                    }}
-                    className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 transition-colors"
-                  >
-                    Reset
-                  </button>
-                  {import.meta.env.DEV && <ErrorButton />}
-                </div>
-              </div>
-            </div>
-
-            <Separator className="bg-neutral-200" />
-
             <div>
               <h3 className="text-base font-semibold text-neutral-900">Support</h3>
               <p className="text-sm text-neutral-600 mt-2">
@@ -134,8 +61,17 @@ export function AboutPage() {
               All content shown in this prototype runs locally in your browser.
             </p>
             <p className="text-xs text-neutral-500">
-              Built by ironsignalworks.
+              Built by{' '}
+              <a
+                href="https://ironsignalworks.com"
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-2 hover:text-neutral-700"
+              >
+                ironsignalworks.com
+              </a>
             </p>
+            <p className="text-xs text-neutral-500">V1.2.0</p>
           </Card>
         </div>
       </ScrollArea>
