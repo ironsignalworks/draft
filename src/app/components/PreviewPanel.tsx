@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Minus, Plus, RotateCcw } from 'lucide-react';
+import { Maximize2, Minimize2, Minus, Plus, RotateCcw } from 'lucide-react';
 import { splitContentIntoPages } from '../lib/paging';
 import { markdownUrlTransform } from '../lib/markdown';
 import type { InspectorSettings } from './InspectorPanel';
@@ -102,11 +102,7 @@ export function PreviewPanel({
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const [zoom, setZoom] = useState(0.8);
   const [showMargins, setShowMargins] = useState(true);
-  const [spreadView, setSpreadView] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [showRulers, setShowRulers] = useState(true);
-  const [snapToRuler, setSnapToRuler] = useState(true);
   const [imagePositions, setImagePositions] = useState<Record<string, { x: number; y: number }>>({});
   const [activeImageKey, setActiveImageKey] = useState<string | null>(null);
 
@@ -132,7 +128,7 @@ export function PreviewPanel({
       legal: { width: 816, height: 1344 },
     };
     const size = layoutFormat === 'custom' ? pageSizeMap[pageSize] : sizeMap[layoutFormat];
-    const pageWidth = spreadView ? size.width * 2 + 24 : size.width;
+    const pageWidth = size.width;
     const pageHeight = size.height;
     const padding = 80;
     const fitScale = Math.min(
@@ -141,7 +137,7 @@ export function PreviewPanel({
       1.5,
     );
     setZoom(clampZoom(fitScale));
-  }, [layoutFormat, pageSize, spreadView]);
+  }, [layoutFormat, pageSize]);
 
   useEffect(() => {
     fitToViewport();
@@ -171,14 +167,9 @@ export function PreviewPanel({
   };
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    // Modifier + wheel always zooms. Also support touchpad gesture-style deltas.
-    const modifierZoom = e.ctrlKey || e.metaKey || e.altKey;
-    const looksLikeTrackpadGesture =
-      e.deltaMode === 0 &&
-      Math.abs(e.deltaX) <= 8 &&
-      Math.abs(e.deltaY) > 0 &&
-      Math.abs(e.deltaY) <= 18;
-    const shouldZoom = modifierZoom || looksLikeTrackpadGesture;
+    // Best-practice behavior: scrolling should pan by default.
+    // Zoom only when users intentionally use a zoom modifier (Ctrl/Cmd + wheel).
+    const shouldZoom = e.ctrlKey || e.metaKey;
     if (!shouldZoom) return;
 
     e.preventDefault();
@@ -189,6 +180,8 @@ export function PreviewPanel({
 
   const trimmedContent = content.trim();
   const hasContent = trimmedContent.length > 0;
+  const wordCount = trimmedContent.length > 0 ? trimmedContent.split(/\s+/).filter(Boolean).length : 0;
+  const characterCount = content.length;
   const mmToPx = (mm: number) => Math.round(mm * 3.78);
   const appliedMargins = {
     top: mmToPx(inspectorSettings?.margins.top ?? 25),
@@ -198,6 +191,9 @@ export function PreviewPanel({
   };
   const headingScale = (inspectorSettings?.headingScale ?? 15) / 10;
   const bodyRhythm = (inspectorSettings?.bodyRhythm ?? 16) / 10;
+  const bodyFontSize = inspectorSettings?.bodyFontSize ?? 14;
+  const paragraphGap = inspectorSettings?.paragraphGap ?? 12;
+  const textColor = inspectorSettings?.textColor ?? '#404040';
   const typePreset = inspectorSettings?.typePreset ?? 'Editorial';
   const pageDimensionsByFormat: Record<typeof layoutFormat, { width: number; height: number }> = {
     book: { width: 794, height: 1123 },
@@ -205,13 +201,6 @@ export function PreviewPanel({
     catalogue: { width: 860, height: 1123 },
     report: { width: 794, height: 1123 },
     custom: pageSize === 'a5' ? { width: 560, height: 794 } : pageSize === 'letter' ? { width: 816, height: 1056 } : pageSize === 'legal' ? { width: 816, height: 1344 } : { width: 794, height: 1123 },
-  };
-  const pageClassByFormat: Record<typeof layoutFormat, string> = {
-    book: 'w-[794px] min-h-[1123px]',
-    zine: 'w-[680px] min-h-[960px]',
-    catalogue: 'w-[860px] min-h-[1123px]',
-    report: 'w-[794px] min-h-[1123px]',
-    custom: 'w-[794px] min-h-[1123px]',
   };
   const presetTypographyClass =
     typePreset === 'Technical'
@@ -222,59 +211,54 @@ export function PreviewPanel({
           ? 'tracking-[0.005em]'
           : 'leading-relaxed';
   const contentClassByFormat: Record<typeof layoutFormat, string> = {
-    book: `prose prose-neutral max-w-none whitespace-pre-wrap break-all ${presetTypographyClass}`,
-    zine: `prose prose-neutral max-w-none text-[15px] whitespace-pre-wrap break-all ${presetTypographyClass}`,
-    catalogue: `prose prose-neutral max-w-none whitespace-pre-wrap break-all ${presetTypographyClass}`,
-    report: `prose prose-neutral max-w-none whitespace-pre-wrap break-all ${presetTypographyClass}`,
-    custom: `prose prose-neutral max-w-none whitespace-pre-wrap break-all ${presetTypographyClass}`,
+    book: `prose prose-neutral max-w-none break-words ${presetTypographyClass}`,
+    zine: `prose prose-neutral max-w-none text-[15px] break-words ${presetTypographyClass}`,
+    catalogue: `prose prose-neutral max-w-none break-words ${presetTypographyClass}`,
+    report: `prose prose-neutral max-w-none break-words ${presetTypographyClass}`,
+    custom: `prose prose-neutral max-w-none break-words ${presetTypographyClass}`,
   };
   const formatLabel = layoutFormat.charAt(0).toUpperCase() + layoutFormat.slice(1);
-  const targetPages = fullBookPreview ? Math.min(Math.max(previewPageCount, 2), 24) : 2;
-  const baseChunks = splitContentIntoPages(content, layoutFormat === 'catalogue' ? 1400 : 1800);
-  const pageChunks =
-    baseChunks.length >= targetPages
-      ? baseChunks.slice(0, targetPages)
-      : [...baseChunks, ...Array.from({ length: targetPages - baseChunks.length }, () => '')];
-  const maxPageIndex = Math.max(0, pageChunks.length - 1);
-  const leftPageIndex = spreadView ? Math.max(0, Math.floor(currentPage / 2) * 2) : currentPage;
-  const rightPageIndex = Math.min(maxPageIndex, leftPageIndex + 1);
+  const minimumPages = fullBookPreview ? Math.max(previewPageCount, 1) : 1;
   const activeSize = pageDimensionsByFormat[layoutFormat];
-  const spreadGapPx = 24;
-  const rawFrameWidth = spreadView ? activeSize.width * 2 + spreadGapPx : activeSize.width;
-  const rawFrameHeight = activeSize.height;
+  const headerFooterReservePx =
+    (inspectorSettings?.headerContent?.trim() ? 20 : 0) + (inspectorSettings?.footerContent?.trim() ? 20 : 0);
+  const availableHeightPx = Math.max(120, activeSize.height - appliedMargins.top - appliedMargins.bottom - headerFooterReservePx);
+  const availableWidthPx = Math.max(120, activeSize.width - appliedMargins.left - appliedMargins.right);
+  const columns = inspectorSettings?.columns === 2 ? 2 : 1;
+  const columnGapPx = columns === 2 ? inspectorSettings?.sectionGap ?? 24 : 0;
+  const columnWidthPx = Math.max(60, (availableWidthPx - columnGapPx) / columns);
+  const lineHeightPx = Math.max(8, bodyFontSize * bodyRhythm);
+  const linesPerColumn = Math.max(1, Math.floor(availableHeightPx / lineHeightPx));
+  const avgCharWidthPx = Math.max(3, bodyFontSize * 0.56);
+  const charsPerLine = Math.max(6, Math.floor(columnWidthPx / avgCharWidthPx));
+  const baseDensityFactor = 0.92;
+  // Keep pagination responsive to spacing controls so layout changes apply across all pages.
+  const paragraphDensityFactor = Math.max(0.55, Math.min(1.15, 1 - (paragraphGap - 12) / 80));
+  const headingDensityFactor = Math.max(0.7, Math.min(1.1, 1 - (headingScale - 1.5) * 0.08));
+  const approxCharsPerPage = Math.max(
+    20,
+    Math.floor(linesPerColumn * charsPerLine * columns * baseDensityFactor * paragraphDensityFactor * headingDensityFactor),
+  );
+  const baseChunks = splitContentIntoPages(content, approxCharsPerPage, charsPerLine);
+  const pageChunks =
+    baseChunks.length >= minimumPages
+      ? baseChunks
+      : [...baseChunks, ...Array.from({ length: minimumPages - baseChunks.length }, () => '')];
+  const maxPageIndex = Math.max(0, pageChunks.length - 1);
+  const pageGapPx = 24;
+  const rawFrameWidth = activeSize.width;
+  const rawStackHeight = activeSize.height * pageChunks.length + pageGapPx * Math.max(0, pageChunks.length - 1);
   const zoomedFrameWidth = Math.round(rawFrameWidth * zoom);
-  const zoomedFrameHeight = Math.round(rawFrameHeight * zoom);
-
-  useEffect(() => {
-    setCurrentPage((prev) => Math.min(prev, maxPageIndex));
-  }, [maxPageIndex]);
-
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    viewport.scrollTop = 0;
-    viewport.scrollLeft = 0;
-  }, [currentPage, spreadView, layoutFormat]);
-
-  const goPrev = () => {
-    setCurrentPage((prev) => Math.max(0, prev - (spreadView ? 2 : 1)));
-  };
-
-  const goNext = () => {
-    setCurrentPage((prev) => Math.min(maxPageIndex, prev + (spreadView ? 2 : 1)));
-  };
+  const zoomedStackHeight = Math.round(rawStackHeight * zoom);
 
   const pageNumberClass =
     inspectorSettings?.numberingFormat === 'top-right'
-      ? 'absolute top-3 right-4 text-xs text-neutral-400 flex items-center gap-2'
+      ? 'absolute top-3 right-4 text-xs text-[#9ca3af] flex items-center gap-2'
       : inspectorSettings?.numberingFormat === 'bottom-center'
-        ? 'absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-neutral-400 flex items-center gap-2'
-        : 'absolute bottom-3 right-4 text-xs text-neutral-400 flex items-center gap-2';
+        ? 'absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-[#9ca3af] flex items-center gap-2'
+        : 'absolute bottom-3 right-4 text-xs text-[#9ca3af] flex items-center gap-2';
 
-  const applySnap = useCallback(
-    (value: number) => (snapToRuler ? Math.round(value / snapStepPx) * snapStepPx : value),
-    [snapToRuler],
-  );
+  const applySnap = useCallback((value: number) => Math.round(value / snapStepPx) * snapStepPx, []);
 
   const updateImagePosition = useCallback(
     (imageKey: string, next: { x: number; y: number }) => {
@@ -314,14 +298,20 @@ export function PreviewPanel({
     <div className="h-full bg-neutral-100 flex flex-col items-center">
       {/* Preview Controls */}
       <div className="w-full px-6 py-3 bg-white border-b border-neutral-200 flex flex-col gap-2">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
+        <div className="flex items-start justify-between gap-4 min-w-0">
+          <div className="min-w-0">
             <div className="text-xs text-neutral-500 uppercase tracking-wide">Layout Preview</div>
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="mt-1 text-xs text-neutral-500 break-words">
               This view matches the final export. Preset: {activePresetName}.
             </p>
           </div>
-          <div className="inline-flex items-center gap-2 whitespace-nowrap max-w-full overflow-x-auto">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-neutral-500 shrink-0">
+            <span className="text-right tabular-nums">{pageChunks.length} pages</span>
+            <span className="text-right tabular-nums">{wordCount} words</span>
+            <span className="text-right tabular-nums col-span-2">{characterCount} chars</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setZoom((prev) => clampZoom(prev - 0.1))}
               className="h-8 w-8 inline-flex items-center justify-center text-xs text-neutral-600 hover:text-neutral-900 rounded-md border border-neutral-300 shadow-sm hover:border-neutral-400 transition-colors"
@@ -357,70 +347,15 @@ export function PreviewPanel({
               {Math.round(zoom * 100)}%
             </div>
             <button
-              type="button"
-              onClick={goPrev}
-              disabled={currentPage <= 0}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-neutral-300 bg-white text-neutral-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Previous page"
+              onClick={() => setShowMargins((prev) => !prev)}
+              className={`h-8 px-3 text-xs rounded-md border shadow-sm transition-colors ${
+                showMargins
+                  ? 'text-neutral-900 border-neutral-500 bg-neutral-100'
+                  : 'text-neutral-600 border-neutral-300 hover:text-neutral-900 hover:border-neutral-400'
+              }`}
             >
-              <ChevronLeft className="w-4 h-4" />
+              Show margins
             </button>
-            <span className="min-w-[5rem] text-center text-xs text-neutral-500 tabular-nums">
-              {leftPageIndex + 1}{spreadView ? `-${rightPageIndex + 1}` : ''} / {pageChunks.length}
-            </span>
-            <button
-              type="button"
-              onClick={goNext}
-              disabled={currentPage >= maxPageIndex}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-neutral-300 bg-white text-neutral-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Next page"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => setShowMargins((prev) => !prev)}
-            className={`h-8 px-3 text-xs rounded-md border shadow-sm transition-colors ${
-              showMargins
-                ? 'text-neutral-900 border-neutral-500 bg-neutral-100'
-                : 'text-neutral-600 border-neutral-300 hover:text-neutral-900 hover:border-neutral-400'
-            }`}
-          >
-            Show margins
-          </button>
-          <button
-            onClick={() => setSpreadView((prev) => !prev)}
-            className={`h-8 px-3 text-xs rounded-md border shadow-sm transition-colors ${
-              spreadView
-                ? 'text-neutral-900 border-neutral-500 bg-neutral-100'
-                : 'text-neutral-600 border-neutral-300 hover:text-neutral-900 hover:border-neutral-400'
-            }`}
-          >
-            Spread view
-          </button>
-          <button
-            onClick={() => setShowRulers((prev) => !prev)}
-            className={`h-8 px-3 text-xs rounded-md border shadow-sm transition-colors ${
-              showRulers
-                ? 'text-neutral-900 border-neutral-500 bg-neutral-100'
-                : 'text-neutral-600 border-neutral-300 hover:text-neutral-900 hover:border-neutral-400'
-            }`}
-          >
-            Show rulers
-          </button>
-          <button
-            onClick={() => setSnapToRuler((prev) => !prev)}
-            className={`h-8 px-3 text-xs rounded-md border shadow-sm transition-colors ${
-              snapToRuler
-                ? 'text-neutral-900 border-neutral-500 bg-neutral-100'
-                : 'text-neutral-600 border-neutral-300 hover:text-neutral-900 hover:border-neutral-400'
-            }`}
-          >
-            Snap to ruler
-          </button>
         </div>
       </div>
 
@@ -435,42 +370,20 @@ export function PreviewPanel({
           <div
             style={{
               width: `${zoomedFrameWidth}px`,
-              height: `${zoomedFrameHeight}px`,
+              height: `${zoomedStackHeight}px`,
             }}
             className="relative will-change-transform"
           >
-            {showRulers && (
-              <>
-                <div className="pointer-events-none absolute -top-6 left-0 right-0 h-6 border border-neutral-300 bg-white/90">
-                  {Array.from({ length: Math.floor(rawFrameWidth / snapStepPx) + 1 }, (_, i) => i * snapStepPx).map((tick) => (
-                    <div
-                      key={`outer-ruler-x-${tick}`}
-                      className={`absolute top-0 border-l ${tick % 100 === 0 ? 'h-6 border-neutral-500/50' : 'h-3 border-neutral-400/40'}`}
-                      style={{ left: `${tick * zoom}px` }}
-                    />
-                  ))}
-                </div>
-                <div className="pointer-events-none absolute -left-6 top-0 bottom-0 w-6 border border-neutral-300 bg-white/90">
-                  {Array.from({ length: Math.floor(rawFrameHeight / snapStepPx) + 1 }, (_, i) => i * snapStepPx).map((tick) => (
-                    <div
-                      key={`outer-ruler-y-${tick}`}
-                      className={`absolute left-0 border-t ${tick % 100 === 0 ? 'w-6 border-neutral-500/50' : 'w-3 border-neutral-400/40'}`}
-                      style={{ top: `${tick * zoom}px` }}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
             <div
               style={{
                 width: `${rawFrameWidth}px`,
-                height: `${rawFrameHeight}px`,
+                minHeight: `${rawStackHeight}px`,
                 transform: `scale(${zoom})`,
                 transformOrigin: 'top left',
               }}
-              className={`grid gap-6 ${spreadView ? 'grid-cols-2' : 'grid-cols-1'}`}
+              className="grid grid-cols-1 gap-6"
             >
-              {[leftPageIndex, ...(spreadView ? [rightPageIndex] : [])].map((pageIndex, idx) => {
+              {pageChunks.map((_, pageIndex) => {
                 const pageMarkdown = pageChunks[pageIndex] || '';
                 const singleImageUrl = parseSingleImageMarkdown(pageMarkdown);
                 const pageImagePrefix = `page-${pageIndex}`;
@@ -501,28 +414,56 @@ export function PreviewPanel({
                       style={{
                         marginBottom: `${inspectorSettings?.paragraphGap ?? 12}px`,
                         lineHeight: bodyRhythm,
+                        overflowWrap: 'anywhere',
+                        wordBreak: 'normal',
                       }}
                     />
                   ),
                   h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
-                    <h1 {...props} style={{ fontSize: `${2.2 * headingScale}rem`, lineHeight: 1.1 }} />
+                    <h1
+                      {...props}
+                      style={{
+                        fontSize: `${2.2 * headingScale}rem`,
+                        lineHeight: 1.1,
+                        overflowWrap: 'anywhere',
+                        wordBreak: 'normal',
+                      }}
+                    />
                   ),
                   h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
-                    <h2 {...props} style={{ fontSize: `${1.8 * headingScale}rem`, lineHeight: 1.15 }} />
+                    <h2
+                      {...props}
+                      style={{
+                        fontSize: `${1.8 * headingScale}rem`,
+                        lineHeight: 1.15,
+                        overflowWrap: 'anywhere',
+                        wordBreak: 'normal',
+                      }}
+                    />
                   ),
                   h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
-                    <h3 {...props} style={{ fontSize: `${1.45 * headingScale}rem`, lineHeight: 1.2 }} />
+                    <h3
+                      {...props}
+                      style={{
+                        fontSize: `${1.45 * headingScale}rem`,
+                        lineHeight: 1.2,
+                        overflowWrap: 'anywhere',
+                        wordBreak: 'normal',
+                      }}
+                    />
                   ),
                 };
 
                 return (
                 <div
                   key={`preview-page-${pageIndex}`}
-                  className={`bg-white rounded-lg shadow-lg relative ${singleImageUrl ? 'p-4' : pageClassByFormat[layoutFormat]}`}
+                  className={`bg-[#ffffff] rounded-lg shadow-lg relative overflow-hidden ${singleImageUrl ? 'p-4' : ''}`}
                   style={
                     singleImageUrl
                       ? undefined
                       : {
+                          width: `${activeSize.width}px`,
+                          height: `${activeSize.height}px`,
                           paddingTop: `${appliedMargins.top}px`,
                           paddingBottom: `${appliedMargins.bottom}px`,
                           paddingLeft: `${appliedMargins.left}px`,
@@ -531,23 +472,25 @@ export function PreviewPanel({
                   }
                 >
                   {!!inspectorSettings?.headerContent && !singleImageUrl && (
-                    <div className="pointer-events-none absolute top-3 left-4 right-4 text-[10px] uppercase tracking-wide text-neutral-400">
+                    <div className="pointer-events-none absolute top-3 left-4 right-4 z-30 text-[10px] uppercase tracking-wide text-[#6b7280]">
                       {inspectorSettings.headerContent}
                     </div>
                   )}
                   {/* Page content with margins visible */}
                   <div
-                    className={
-                      singleImageUrl ? 'h-full w-full' : contentClassByFormat[layoutFormat]
-                    }
+                      className={singleImageUrl ? 'relative z-10 h-full w-full overflow-hidden' : `relative z-10 ${contentClassByFormat[layoutFormat]} h-full overflow-hidden`}
                     style={
                       singleImageUrl
                         ? undefined
                         : {
                             fontFamily: inspectorSettings?.primaryFont ?? undefined,
+                            fontSize: `${bodyFontSize}px`,
                             columnCount: inspectorSettings?.columns === 2 ? 2 : undefined,
                             columnGap: inspectorSettings?.columns === 2 ? `${inspectorSettings.sectionGap}px` : undefined,
                             lineHeight: bodyRhythm,
+                            overflowWrap: 'anywhere',
+                            wordBreak: 'normal',
+                            color: textColor,
                           }
                     }
                   >
@@ -568,12 +511,12 @@ export function PreviewPanel({
                         </div>
                       ) : (
                         <ReactMarkdown urlTransform={markdownUrlTransform} components={markdownComponents}>
-                          {pageMarkdown || pageChunks[0] || ''}
+                          {pageMarkdown}
                         </ReactMarkdown>
                       )
                     ) : (
-                      <div className="text-neutral-500 text-center mt-32 space-y-2">
-                        <h3 className="text-base font-semibold text-neutral-800">Preview will appear here</h3>
+                      <div className="text-[#6b7280] text-center mt-32 space-y-2">
+                        <h3 className="text-base font-semibold text-[#262626]">Preview will appear here</h3>
                         <p className="text-sm">
                           As you add content, Draft will format it into pages automatically.
                         </p>
@@ -582,17 +525,17 @@ export function PreviewPanel({
                   </div>
 
                   {!!inspectorSettings?.footerContent && !singleImageUrl && (
-                    <div className="pointer-events-none absolute bottom-3 left-4 right-4 text-[10px] uppercase tracking-wide text-neutral-400">
+                    <div className="pointer-events-none absolute bottom-3 left-4 right-4 z-30 text-[10px] uppercase tracking-wide text-[#6b7280]">
                       {inspectorSettings.footerContent}
                     </div>
                   )}
 
                   {inspectorSettings?.addSignature && pageIndex === maxPageIndex && !singleImageUrl && (
-                    <div className="absolute left-4 right-4 bottom-10 text-xs text-neutral-500">
+                    <div className="absolute left-4 right-4 bottom-10 z-20 text-xs text-[#6b7280]">
                       <div className="mb-1">{inspectorSettings.signatureLabel || 'Approved by'}</div>
-                      <div className="h-px w-[220px] bg-neutral-400" />
+                      <div className="h-px w-[220px] bg-[#9ca3af]" />
                       {inspectorSettings.signatureFileName ? (
-                        <div className="mt-1 text-[10px] text-neutral-400">{inspectorSettings.signatureFileName}</div>
+                        <div className="mt-1 text-[10px] text-[#9ca3af]">{inspectorSettings.signatureFileName}</div>
                       ) : null}
                     </div>
                   )}
@@ -600,7 +543,7 @@ export function PreviewPanel({
                   {/* Margin indicators - subtle guides */}
                   {showMargins && (
                     <div
-                      className="absolute inset-0 pointer-events-none rounded-lg"
+                      className="absolute inset-0 z-0 pointer-events-none rounded-lg"
                       style={{
                         borderStyle: 'solid',
                         borderTopWidth: `${appliedMargins.top}px`,
@@ -613,11 +556,11 @@ export function PreviewPanel({
                   )}
                   {/* Page number */}
                   {inspectorSettings?.numberingFormat !== 'none' && (
-                    <div className={pageNumberClass}>
-                      <span className="rounded border border-neutral-300 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-neutral-500">
+                    <div className={`${pageNumberClass} z-30`}>
+                      <span className="rounded border border-[#d1d5db] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[#6b7280]">
                         {formatLabel}
                       </span>
-                      <span>{pageIndex + 1}{spreadView && idx === 1 ? 'R' : spreadView ? 'L' : ''}</span>
+                      <span>{pageIndex + 1}</span>
                     </div>
                   )}
                 </div>

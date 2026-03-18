@@ -4,6 +4,11 @@
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta
+        http-equiv="Content-Security-Policy"
+        content="default-src 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.sentry.io https://*.logrocket.io https://*.lr-ingest.io https://www.googleapis.com; form-action 'self'"
+      />
+      <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
       <title>Draft</title>
       <meta name="description" content="Draft is a browser-native publishing tool for structured documents." />
       <meta name="author" content="ironsignalworks" />
@@ -24,6 +29,20 @@
 
     <body>
       <div id="root"></div>
+      <script>
+        (function restoreSpaRoute() {
+          var url = new URL(window.location.href);
+          var encodedPath = url.searchParams.get('p');
+          if (!encodedPath) return;
+          var basePath = '/draft';
+          var decodedPath = decodeURIComponent(encodedPath);
+          var normalizedPath = decodedPath.startsWith('/') ? decodedPath : '/' + decodedPath;
+          url.searchParams.delete('p');
+          var query = url.searchParams.toString();
+          var nextUrl = basePath + normalizedPath + (query ? '?' + query : '') + url.hash;
+          window.history.replaceState(null, '', nextUrl);
+        })();
+      </script>
       <script type="module" src="/src/main.tsx"></script>
     </body>
   </html>

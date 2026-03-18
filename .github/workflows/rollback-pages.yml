@@ -1,0 +1,74 @@
+name: Rollback GitHub Pages
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_ref:
+        description: 'Git ref to redeploy (example: v1.3.2 or commit SHA)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: rollback-pages
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    env:
+      VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+      VITE_SENTRY_ENV: production
+      VITE_LOGROCKET_ID: ${{ secrets.VITE_LOGROCKET_ID }}
+      VITE_API_URL: ${{ secrets.VITE_API_URL }}
+      VITE_ENABLE_MSW: 'false'
+      VITE_FEATURE_NEW_UI: ${{ vars.VITE_FEATURE_NEW_UI || 'false' }}
+    steps:
+      - name: Checkout target ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Resolve release metadata
+        run: |
+          echo "VITE_SENTRY_RELEASE=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "VITE_APP_VERSION=${{ inputs.release_ref }}" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate env contract
+        run: npm run check:env
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build:gh
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy rollback
+        uses: actions/deploy-pages@v4

@@ -41,6 +41,33 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+:root[data-ui-scale='small'] {
+  --font-size: 14px;
+}
+
+:root[data-ui-scale='medium'] {
+  --font-size: 16px;
+}
+
+:root[data-ui-scale='large'] {
+  --font-size: 18px;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-neutral-50: oklch(0.205 0 0);
+  --color-neutral-100: oklch(0.23 0 0);
+  --color-neutral-200: oklch(0.269 0 0);
+  --color-neutral-300: oklch(0.35 0 0);
+  --color-neutral-400: oklch(0.5 0 0);
+  --color-neutral-500: oklch(0.65 0 0);
+  --color-neutral-600: oklch(0.73 0 0);
+  --color-neutral-700: oklch(0.82 0 0);
+  --color-neutral-800: oklch(0.9 0 0);
+  --color-neutral-900: oklch(0.95 0 0);
+  --color-neutral-950: oklch(0.985 0 0);
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
@@ -76,6 +103,14 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+}
+
+:root[data-theme='dark'] .bg-white {
+  background-color: var(--color-neutral-100) !important;
+}
+
+:root[data-theme='dark'] .bg-white\/95 {
+  background-color: color-mix(in oklab, var(--color-neutral-100) 95%, transparent) !important;
 }
 
 @theme inline {

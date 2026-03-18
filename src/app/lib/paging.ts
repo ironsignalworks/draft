@@ -1,16 +1,10 @@
 export const PAGE_BREAK_TOKEN = '<!--DK_PAGE_BREAK-->';
 
-function isMarkdownImageLine(line: string): boolean {
-  const trimmed = line.trim();
-  if (!trimmed) return false;
-  const match = trimmed.match(/^!\[[^\]]*]\((.+)\)$/);
-  if (!match) return false;
-  const rawBody = match[1].trim();
-  if (!rawBody) return false;
-  return true;
-}
-
-export function splitContentIntoPages(content: string, approxCharsPerPage: number): string[] {
+export function splitContentIntoPages(
+  content: string,
+  approxCharsPerPage: number,
+  _maxCharsPerLine = 120,
+): string[] {
   const source = (content ?? '').trim();
   if (!source) return [''];
 
@@ -22,24 +16,7 @@ export function splitContentIntoPages(content: string, approxCharsPerPage: numbe
   const pages: string[] = [];
 
   for (const segment of segments) {
-    // Wrap very long lines so visual pagination is more predictable and avoids mid-page crop.
-    const wrapped = segment
-      .split('\n')
-      .map((line) => {
-        if (isMarkdownImageLine(line)) return line;
-        if (line.length <= 120) return line;
-        const parts: string[] = [];
-        let rest = line;
-        while (rest.length > 120) {
-          parts.push(rest.slice(0, 120));
-          rest = rest.slice(120);
-        }
-        if (rest.length > 0) parts.push(rest);
-        return parts.join('\n');
-      })
-      .join('\n');
-
-    const blocks = wrapped.split(/\n{2,}/).filter((part) => part.trim().length > 0);
+    const blocks = segment.split(/\n{2,}/).filter((part) => part.trim().length > 0);
     let current = '';
 
     const splitOversizedBlock = (block: string): string[] => {

@@ -3,12 +3,13 @@ import ReactMarkdown from 'react-markdown';
 import {
   Download,
   FileText,
+  FileOutput,
+  Info,
   ImagePlus,
   LayoutTemplate,
   Menu,
   Settings,
   SquarePen,
-  Upload,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -19,10 +20,12 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { toast } from 'sonner';
 import { SavedDocuments, type SavedDocumentRecord } from './SavedDocuments';
 import { SettingsPanel, type WorkspaceSettings } from './SettingsPanel';
+import { AboutPage } from './AboutPage';
 import { markdownUrlTransform } from '../lib/markdown';
+import { splitContentIntoPages } from '../lib/paging';
 
 type MobileMode = 'edit' | 'preview' | 'layout';
-type UtilityView = 'none' | 'saved' | 'settings';
+type UtilityView = 'none' | 'saved' | 'settings' | 'about';
 
 interface MobileWorkspaceProps {
   content: string;
@@ -33,6 +36,7 @@ interface MobileWorkspaceProps {
   onNewDocument: () => void;
   onOpenSavedDocs: () => void;
   onOpenSettings: () => void;
+  onOpenAbout: () => void;
   onOpenExport: () => void;
   savedDocuments?: SavedDocumentRecord[];
   onOpenSavedDocument?: (id: string) => void;
@@ -51,6 +55,7 @@ export function MobileWorkspace({
   onNewDocument,
   onOpenSavedDocs,
   onOpenSettings,
+  onOpenAbout,
   onOpenExport,
   savedDocuments = [],
   onOpenSavedDocument,
@@ -61,17 +66,17 @@ export function MobileWorkspace({
 }: MobileWorkspaceProps) {
   const [mode, setMode] = React.useState<MobileMode>('edit');
   const [isRenamingTitle, setIsRenamingTitle] = React.useState(false);
-  const [showMargins, setShowMargins] = React.useState(true);
-  const [spreadView, setSpreadView] = React.useState(false);
   const [columns, setColumns] = React.useState<1 | 2>(1);
   const [utilityView, setUtilityView] = React.useState<UtilityView>('none');
   const [activePreviewPage, setActivePreviewPage] = React.useState<number | null>(null);
+  const [layoutMargin, setLayoutMargin] = React.useState(24);
+  const [layoutHeaderFooterEnabled, setLayoutHeaderFooterEnabled] = React.useState(true);
   const editorRef = React.useRef<HTMLTextAreaElement | null>(null);
 
   const resolvedTitle = documentName.trim() || 'Untitled Document';
   const trimmedContent = content.trim();
   const hasContent = trimmedContent.length > 0;
-  const previewPages = hasContent ? [1, 2, 3] : [1];
+  const previewChunks = hasContent ? splitContentIntoPages(content, 1600) : [''];
 
   const applyInlineWrap = (prefix: string, suffix = '') => {
     const textarea = editorRef.current;
@@ -128,58 +133,37 @@ export function MobileWorkspace({
   );
 
   const renderPreviewMode = () => (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-neutral-100">
-      <div className="border-b border-neutral-200 bg-white px-4 py-3">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#f5f5f5]">
+      <div className="border-b border-[#e5e7eb] bg-[#ffffff] px-4 py-3">
         <p className="text-xs uppercase tracking-wide text-neutral-500">Layout Preview</p>
         <p className="mt-1 text-xs text-neutral-500">Matches export output.</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className={showMargins ? 'bg-neutral-100 border-neutral-900' : ''}
-            onClick={() => setShowMargins((prev) => !prev)}
-          >
-            Show margins
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className={spreadView ? 'bg-neutral-100 border-neutral-900' : ''}
-            onClick={() => setSpreadView((prev) => !prev)}
-          >
-            Spread view
-          </Button>
-        </div>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
-        <div className={`mx-auto w-full max-w-md ${spreadView ? 'space-y-3' : 'space-y-4'}`}>
-          {previewPages.map((page) => (
+        <div className="mx-auto w-full max-w-md space-y-4">
+          {previewChunks.map((pageContent, index) => (
             <button
-              key={page}
+              key={`mobile-preview-page-${index + 1}`}
               type="button"
-              className="relative block w-full rounded-lg bg-white p-6 text-left shadow-sm"
+              className="relative block w-full rounded-lg bg-[#ffffff] p-6 text-left shadow-sm"
               onClick={() => {
-                setActivePreviewPage(page);
+                setActivePreviewPage(index + 1);
                 window.setTimeout(() => setActivePreviewPage(null), 1000);
               }}
             >
-              <div className="prose prose-sm max-w-none text-neutral-700">
+              <div className="prose prose-sm max-w-none text-[#404040]">
                 {hasContent ? (
-                  <ReactMarkdown urlTransform={markdownUrlTransform}>{content}</ReactMarkdown>
+                  <ReactMarkdown urlTransform={markdownUrlTransform}>{pageContent}</ReactMarkdown>
                 ) : (
-                  <div className="space-y-2 text-center text-sm text-neutral-500">
-                    <h3 className="text-base font-semibold text-neutral-800">Preview will appear here</h3>
+                  <div className="space-y-2 text-center text-sm text-[#6b7280]">
+                    <h3 className="text-base font-semibold text-[#262626]">Preview will appear here</h3>
                     <p>As you add content, Draft will format it into pages automatically.</p>
                   </div>
                 )}
               </div>
-              {showMargins && (
-                <div className="pointer-events-none absolute inset-0 rounded-lg border-[18px] border-neutral-100" />
-              )}
-              {activePreviewPage === page && (
+              {activePreviewPage === index + 1 && (
                 <div className="absolute right-3 bottom-3 rounded-md bg-neutral-900 px-2 py-1 text-xs text-white">
-                  Page {page}
+                  Page {index + 1}
                 </div>
               )}
             </button>
@@ -195,7 +179,11 @@ export function MobileWorkspace({
         <AccordionItem value="template">
           <AccordionTrigger>Template</AccordionTrigger>
           <AccordionContent className="space-y-2">
-            <select className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm">
+            <select
+              aria-label="Template"
+              title="Template"
+              className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm"
+            >
               <option>Book</option>
               <option>Zine</option>
               <option>Catalogue</option>
@@ -210,7 +198,11 @@ export function MobileWorkspace({
           <AccordionContent className="space-y-4">
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-wide text-neutral-500">Page size</label>
-              <select className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm">
+              <select
+                aria-label="Page size"
+                title="Page size"
+                className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm"
+              >
                 <option>A4</option>
                 <option>Letter</option>
                 <option>Legal</option>
@@ -218,7 +210,7 @@ export function MobileWorkspace({
             </div>
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-wide text-neutral-500">Margins</label>
-              <Slider defaultValue={[24]} min={8} max={48} step={1} />
+              <Slider value={[layoutMargin]} onValueChange={(value) => setLayoutMargin(value[0] ?? layoutMargin)} min={8} max={48} step={1} />
             </div>
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-wide text-neutral-500">Columns</label>
@@ -249,7 +241,11 @@ export function MobileWorkspace({
           <AccordionContent className="space-y-4">
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-wide text-neutral-500">Typeface preset</label>
-              <select className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm">
+              <select
+                aria-label="Typeface preset"
+                title="Typeface preset"
+                className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm"
+              >
                 <option>Editorial</option>
                 <option>Technical</option>
                 <option>Compact</option>
@@ -258,7 +254,11 @@ export function MobileWorkspace({
             </div>
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-wide text-neutral-500">Scale preset</label>
-              <select className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm">
+              <select
+                aria-label="Scale preset"
+                title="Scale preset"
+                className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm"
+              >
                 <option>Balanced</option>
                 <option>Comfortable</option>
                 <option>Dense</option>
@@ -272,7 +272,11 @@ export function MobileWorkspace({
           <AccordionContent className="space-y-4">
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-wide text-neutral-500">Flow rules</label>
-              <select className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm">
+              <select
+                aria-label="Flow rules"
+                title="Flow rules"
+                className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm"
+              >
                 <option>Balanced</option>
                 <option>Keep sections tight</option>
                 <option>Allow breaks</option>
@@ -280,7 +284,11 @@ export function MobileWorkspace({
             </div>
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-wide text-neutral-500">Page numbering</label>
-              <select className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm">
+              <select
+                aria-label="Page numbering"
+                title="Page numbering"
+                className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm"
+              >
                 <option>Bottom center</option>
                 <option>Bottom right</option>
                 <option>None</option>
@@ -288,7 +296,7 @@ export function MobileWorkspace({
             </div>
             <div className="flex items-center justify-between rounded-md border border-neutral-200 bg-neutral-50 p-3">
               <span className="text-sm text-neutral-700">Header/footer</span>
-              <Switch defaultChecked />
+              <Switch checked={layoutHeaderFooterEnabled} onCheckedChange={setLayoutHeaderFooterEnabled} />
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -301,7 +309,11 @@ export function MobileWorkspace({
       return (
         <SavedDocuments
           documents={savedDocuments}
-          onOpenDocument={onOpenSavedDocument}
+          onOpenDocument={(id) => {
+            onOpenSavedDocument?.(id);
+            setUtilityView('none');
+            setMode('preview');
+          }}
           onDuplicateDocument={onDuplicateSavedDocument}
           onDeleteDocument={onDeleteSavedDocument}
         />
@@ -309,6 +321,9 @@ export function MobileWorkspace({
     }
     if (utilityView === 'settings') {
       return <SettingsPanel settings={workspaceSettings} onChange={onWorkspaceSettingsChange} />;
+    }
+    if (utilityView === 'about') {
+      return <AboutPage />;
     }
 
     if (mode === 'edit') return renderEditorMode();
@@ -319,10 +334,10 @@ export function MobileWorkspace({
   return (
     <div className="flex h-full w-full max-w-full flex-col overflow-hidden">
       <header className="border-b border-neutral-200 bg-white px-3 py-2">
-        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+        <div className="relative flex items-center justify-center">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="Open menu">
+              <Button variant="outline" size="icon" aria-label="Open menu" className="absolute left-0 top-1/2 -translate-y-1/2">
                 <Menu className="h-4 w-4" />
               </Button>
             </SheetTrigger>
@@ -375,6 +390,19 @@ export function MobileWorkspace({
                   <Button
                     variant="outline"
                     className="w-full justify-start"
+                    onClick={() => {
+                      setUtilityView('about');
+                      onOpenAbout();
+                    }}
+                  >
+                    <Info className="h-4 w-4" />
+                    About
+                  </Button>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
                     onClick={() => document.getElementById('mobile-import-input')?.click()}
                   >
                     <Download className="h-4 w-4" />
@@ -385,10 +413,10 @@ export function MobileWorkspace({
             </SheetContent>
           </Sheet>
 
-          <div className="min-w-0">
+          <div className="min-w-0 text-center">
             <div className="mb-1 flex items-center justify-center gap-1.5">
-              <img src="/icon-app.svg" alt="Draft" className="h-4 w-4 shrink-0" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Draft</span>
+              <img src="/icon-app.svg" alt="Draft" className="h-4 w-4 shrink-0 dark:invert" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Draft - Publishing Tool</span>
             </div>
             {isRenamingTitle ? (
               <input
@@ -413,20 +441,12 @@ export function MobileWorkspace({
             )}
           </div>
 
-          <Button
-            className="h-9 gap-2 bg-neutral-900 px-3 text-xs hover:bg-neutral-800"
-            aria-label="Export PDF"
-            onClick={onOpenExport}
-          >
-            <Upload className="h-4 w-4" />
-            Export PDF
-          </Button>
         </div>
       </header>
 
       <main className="min-h-0 flex-1 overflow-hidden">{renderModeContent()}</main>
 
-      <nav className="grid grid-cols-3 gap-2 border-t border-neutral-200 bg-white p-2">
+      <nav className="grid grid-cols-4 gap-2 border-t border-neutral-200 bg-white p-2">
         <Button
           variant="outline"
           size="sm"
@@ -462,6 +482,16 @@ export function MobileWorkspace({
         >
           <LayoutTemplate className="h-4 w-4" />
           <span className="text-[11px]">Layout</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-11 flex-col"
+          onClick={onOpenExport}
+          aria-label="Export PDF"
+        >
+          <FileOutput className="h-4 w-4" />
+          <span className="text-[11px]">Export</span>
         </Button>
       </nav>
 

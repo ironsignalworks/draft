@@ -9,6 +9,8 @@ interface NewDocumentViewProps {
 
 export function NewDocumentView({ onStartBlank }: NewDocumentViewProps) {
   const [step, setStep] = useState(0);
+  const releaseLabel = __APP_RELEASE_ID__.slice(0, 7);
+  const showReleaseLabel = __APP_RELEASE_ID__ !== 'local-dev';
   const onboardingSteps = [
     {
       label: 'STEP 1 - Editor',
@@ -147,6 +149,9 @@ export function NewDocumentView({ onStartBlank }: NewDocumentViewProps) {
           <div className="mt-16 pt-8 border-t border-neutral-200">
             <p className="text-sm text-neutral-500">
               All processing happens locally in your browser. Your documents stay private.
+            </p>
+            <p className="mt-1 text-sm text-neutral-500">
+              App v{__APP_VERSION__}{showReleaseLabel ? ` - ${releaseLabel}` : ''}
             </p>
           </div>
         </div>

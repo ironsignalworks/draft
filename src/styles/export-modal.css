@@ -1,0 +1,58 @@
+/* Styles for the export modal page preview content */
+
+.export-page-content {
+  padding-top: 96px;
+  padding-bottom: 96px;
+  padding-left: 76px;
+  padding-right: 76px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  column-count: 1;
+  column-gap: 24px;
+  color: #404040;
+}
+
+.export-page-content--two-columns {
+  column-count: 2;
+}
+
+.export-page-preview {
+  width: 222px;
+  height: 315px;
+}
+
+.export-page-preview-inner {
+  width: 794px;
+  height: 1123px;
+  transform: scale(0.28);
+  transform-origin: top left;
+}
+
+.export-page-paragraph {
+  margin-bottom: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.export-page-heading {
+  line-height: 1.2;
+}
+
+.export-page-heading--h1 {
+  font-size: 2.2rem;
+  line-height: 1.1;
+}
+
+.export-page-heading--h2 {
+  font-size: 1.8rem;
+  line-height: 1.15;
+}
+
+.export-page-heading--h3 {
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, PanelLeftClose, PanelLeftOpen, Upload } from 'lucide-react';
+import { Search, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import {
@@ -66,9 +66,10 @@ export const FORMAT_PRESETS: Array<{ id: FormatPresetId; label: string }> = [
 interface TopBarProps {
   isSidebarOpen: boolean;
   onToggleSidebar: () => void;
+  isInspectorCollapsed?: boolean;
+  onToggleInspectorCollapse?: () => void;
   documentName: string;
   onDocumentNameChange: (value: string) => void;
-  onExportClick: () => void;
   formatPreset: FormatPresetId;
   onFormatPresetChange: (value: FormatPresetId) => void;
   searchQuery: string;
@@ -78,9 +79,10 @@ interface TopBarProps {
 export function TopBar({
   isSidebarOpen,
   onToggleSidebar,
+  isInspectorCollapsed = false,
+  onToggleInspectorCollapse,
   documentName,
   onDocumentNameChange,
-  onExportClick,
   formatPreset,
   onFormatPresetChange,
   searchQuery,
@@ -107,11 +109,19 @@ export function TopBar({
               onChange={(e) => onDocumentNameChange(e.target.value)}
               placeholder="Untitled Document"
               title="Name your document."
+              aria-label="Document name"
               className="h-10 bg-white"
             />
           </div>
 
-          <div className="hidden lg:block w-[220px] shrink-0">
+          <div className="hidden md:block relative min-w-[170px] flex-1 max-w-[320px]">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+            <Input type="text" value={searchQuery} onChange={(e) => onSearchQueryChange(e.target.value)} placeholder="Search document..." aria-label="Search document" className="h-10 bg-white pl-9" />
+          </div>
+        </div>
+
+        <div className="hidden lg:flex items-center gap-2 shrink-0 justify-self-end">
+          <div className="w-[220px]">
             <Select
               value={formatPreset}
               onValueChange={(value) => onFormatPresetChange(value as TopBarProps['formatPreset'])}
@@ -131,18 +141,21 @@ export function TopBar({
               </SelectContent>
             </Select>
           </div>
-
-          <div className="hidden md:block relative min-w-[170px] flex-1 max-w-[320px]">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-            <Input type="text" value={searchQuery} onChange={(e) => onSearchQueryChange(e.target.value)} placeholder="Search document..." className="h-10 bg-white pl-9" />
-          </div>
+          {onToggleInspectorCollapse ? (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={onToggleInspectorCollapse}
+              title={isInspectorCollapsed ? 'Expand inspector' : 'Collapse inspector'}
+              aria-label={isInspectorCollapsed ? 'Expand inspector' : 'Collapse inspector'}
+            >
+              {isInspectorCollapsed ? <PanelRightOpen className="w-4 h-4" /> : <PanelRightClose className="w-4 h-4" />}
+            </Button>
+          ) : null}
         </div>
-
-        <Button onClick={onExportClick} className="inline-flex h-10 shrink-0 gap-2 bg-neutral-900 hover:bg-neutral-800">
-          <Upload className="w-4 h-4" />
-          Export PDF
-        </Button>
       </div>
     </header>
   );
 }
+
+

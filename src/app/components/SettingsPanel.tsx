@@ -9,7 +9,7 @@ export interface WorkspaceSettings {
   editorFontSize: 12 | 14 | 16 | 18;
   defaultTemplate: 'book' | 'zine' | 'catalogue' | 'report' | 'custom';
   defaultPageSize: 'a4' | 'a5' | 'letter' | 'legal';
-  theme: 'light' | 'dark' | 'auto';
+  theme: 'light' | 'dark';
   uiScale: 'small' | 'medium' | 'large';
 }
 
@@ -115,7 +115,6 @@ export function SettingsPanel({ settings = fallbackSettings, onChange }: Setting
                 >
                   <option value="light">Light</option>
                   <option value="dark">Dark</option>
-                  <option value="auto">Auto</option>
                 </select>
               </div>
 

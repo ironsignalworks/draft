@@ -16,6 +16,7 @@ import { ExportShareView } from './components/ExportShareView';
 import { Toaster } from './components/ui/sonner';
 import { PAGE_BREAK_TOKEN, splitContentIntoPages } from './lib/paging';
 import { readExportSharePayloadFromLocation } from './lib/export';
+import { APP_EVENTS, trackAppEvent, trackAppPageView } from './lib/analytics';
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -46,6 +47,8 @@ const defaultInspectorSettings: InspectorSettings = {
   sectionGap: 24,
   paragraphGap: 12,
   primaryFont: 'Inter',
+  textColor: '#404040',
+  bodyFontSize: 14,
   headingScale: 15,
   bodyRhythm: 16,
   typePreset: 'Editorial',
@@ -69,6 +72,7 @@ export default function App() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isInspectorCollapsed, setIsInspectorCollapsed] = useState(false);
   const [formatPreset, setFormatPreset] = useState<FormatPresetId>('book-a4');
   const [fullBookPreview] = useState(false);
   const [previewPageCount] = useState(12);
@@ -145,8 +149,9 @@ export default function App() {
       }
       const rawWorkspace = localStorage.getItem(STORAGE_KEYS.workspaceSettings);
       if (rawWorkspace) {
-        const parsed = JSON.parse(rawWorkspace) as WorkspaceSettings;
-        setWorkspaceSettings({ ...defaultWorkspaceSettings, ...parsed });
+        const parsed = JSON.parse(rawWorkspace) as WorkspaceSettings & { theme?: 'light' | 'dark' | 'auto' };
+        const normalizedTheme: WorkspaceSettings['theme'] = parsed.theme === 'dark' ? 'dark' : 'light';
+        setWorkspaceSettings({ ...defaultWorkspaceSettings, ...parsed, theme: normalizedTheme });
       }
       const rawInspector = localStorage.getItem(STORAGE_KEYS.inspectorSettings);
       if (rawInspector) {
@@ -173,7 +178,15 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = workspaceSettings.theme;
     document.documentElement.dataset.uiScale = workspaceSettings.uiScale;
+    document.documentElement.classList.toggle('dark', workspaceSettings.theme === 'dark');
   }, [workspaceSettings.theme, workspaceSettings.uiScale]);
+
+  useEffect(() => {
+    trackAppPageView(activeNav, {
+      device:
+        isPhone ? 'phone' : isTabletPortrait || isTabletLandscape ? 'tablet' : 'desktop',
+    });
+  }, [activeNav, isPhone, isTabletLandscape, isTabletPortrait]);
 
   const isDocumentLoaded = showEditor || content.trim().length > 0 || documentName.trim().length > 0;
 
@@ -212,6 +225,7 @@ export default function App() {
     setContent(record.content);
     setShowEditor(true);
     setActiveNav('new');
+    trackAppEvent(APP_EVENTS.OPEN_SAVED_DOCUMENT, { id });
     toast.success(`Opened "${record.title}"`);
   };
 
@@ -225,6 +239,7 @@ export default function App() {
       updatedAt: new Date().toISOString(),
     };
     setSavedDocuments((prev) => [clone, ...prev]);
+    trackAppEvent(APP_EVENTS.DUPLICATE_SAVED_DOCUMENT, { id });
     toast.success('Document duplicated');
   };
 
@@ -236,6 +251,7 @@ export default function App() {
       setContent('');
       setShowEditor(false);
     }
+    trackAppEvent(APP_EVENTS.DELETE_SAVED_DOCUMENT, { id });
     toast.success('Document removed');
   };
 
@@ -285,6 +301,7 @@ export default function App() {
       setActiveDocumentId(null);
       setShowEditor(true);
       setActiveNav('new');
+      trackAppEvent(APP_EVENTS.IMPORT_FILE, { fileName: file.name, isImage });
       toast.success(`Imported ${file.name}`);
     } catch {
       toast.error('Could not read that file.');
@@ -310,9 +327,15 @@ export default function App() {
 
   const handleFormatPresetChange = (nextPreset: FormatPresetId) => {
     setFormatPreset(nextPreset);
+    trackAppEvent(APP_EVENTS.CHANGE_FORMAT_PRESET, { preset: nextPreset });
     if (activeNav === 'new' && !showEditor) {
       setShowEditor(true);
     }
+  };
+
+  const openExportModal = () => {
+    setExportModalOpen(true);
+    trackAppEvent(APP_EVENTS.OPEN_EXPORT_MODAL, { sourceNav: activeNav });
   };
 
   const filteredContent =
@@ -385,9 +408,18 @@ export default function App() {
         </ResizablePanel>
 
         <ResizableHandle className="w-px bg-neutral-200" />
-
-        <ResizablePanel defaultSize={25} minSize={20}>
-          <InspectorPanel settings={inspectorSettings} onChange={setInspectorSettings} />
+        <ResizablePanel
+          key={isInspectorCollapsed ? 'inspector-collapsed' : 'inspector-expanded'}
+          defaultSize={isInspectorCollapsed ? 6 : 25}
+          minSize={isInspectorCollapsed ? 5 : 20}
+          maxSize={isInspectorCollapsed ? 8 : 35}
+        >
+          <InspectorPanel
+            settings={inspectorSettings}
+            onChange={setInspectorSettings}
+            onReset={() => setInspectorSettings(defaultInspectorSettings)}
+            collapsed={isInspectorCollapsed}
+          />
         </ResizablePanel>
       </ResizablePanelGroup>
     );
@@ -404,7 +436,7 @@ export default function App() {
 
   if (isPhone) {
     return (
-      <div className="h-screen w-full max-w-full overflow-hidden bg-white" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <div className="h-screen w-full max-w-full overflow-hidden bg-background text-foreground" style={{ fontFamily: 'Inter, sans-serif' }}>
         <MobileWorkspace
           content={content}
           onContentChange={setContent}
@@ -414,7 +446,8 @@ export default function App() {
           onNewDocument={clearAndStartNewDocument}
           onOpenSavedDocs={() => setActiveNav('saved')}
           onOpenSettings={() => setActiveNav('settings')}
-          onOpenExport={() => setExportModalOpen(true)}
+          onOpenAbout={() => setActiveNav('about')}
+          onOpenExport={openExportModal}
           savedDocuments={savedDocuments}
           onOpenSavedDocument={handleOpenSavedDocument}
           onDuplicateSavedDocument={handleDuplicateSavedDocument}
@@ -443,7 +476,7 @@ export default function App() {
 
   if (isTabletPortrait || isTabletLandscape) {
     return (
-      <div className="h-screen w-full max-w-full overflow-hidden bg-white" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <div className="h-screen w-full max-w-full overflow-hidden bg-background text-foreground" style={{ fontFamily: 'Inter, sans-serif' }}>
         <TabletWorkspace
           mode={isTabletLandscape ? 'landscape' : 'portrait'}
           content={content}
@@ -454,7 +487,7 @@ export default function App() {
           onNewDocument={clearAndStartNewDocument}
           onOpenSavedDocs={() => setActiveNav('saved')}
           onOpenSettings={() => setActiveNav('settings')}
-          onOpenExport={() => setExportModalOpen(true)}
+          onOpenExport={openExportModal}
           savedDocuments={savedDocuments}
           onOpenSavedDocument={handleOpenSavedDocument}
           onDuplicateSavedDocument={handleDuplicateSavedDocument}
@@ -482,7 +515,7 @@ export default function App() {
   }
 
   return (
-    <div className="relative h-screen flex bg-white" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="relative h-screen flex bg-background text-foreground" style={{ fontFamily: 'Inter, sans-serif' }}>
       <div className={`${!isDesktopLayout ? 'absolute inset-y-0 left-0 z-40' : 'relative'} transition-all duration-200 ease-out overflow-hidden ${isSidebarOpen ? 'w-64' : 'w-0'}`}>
         {isSidebarOpen && (
           <LeftSidebar
@@ -491,7 +524,7 @@ export default function App() {
               setActiveNav(nav);
               if (!isDesktopLayout) setIsSidebarOpen(false);
             }}
-            onExportClick={() => setExportModalOpen(true)}
+            onExportClick={openExportModal}
             onImportFile={handleImportFile}
           />
         )}
@@ -509,9 +542,10 @@ export default function App() {
         <TopBar
           isSidebarOpen={isSidebarOpen}
           onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+          isInspectorCollapsed={isInspectorCollapsed}
+          onToggleInspectorCollapse={() => setIsInspectorCollapsed((prev) => !prev)}
           documentName={documentName}
           onDocumentNameChange={setDocumentName}
-          onExportClick={() => setExportModalOpen(true)}
           formatPreset={formatPreset}
           onFormatPresetChange={handleFormatPresetChange}
           searchQuery={searchQuery}

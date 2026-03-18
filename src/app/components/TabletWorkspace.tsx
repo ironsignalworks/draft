@@ -23,6 +23,7 @@ import { SettingsPanel, type WorkspaceSettings } from './SettingsPanel';
 import { analyzeDocument } from '../lib/preflight';
 import { toast } from 'sonner';
 import { markdownUrlTransform } from '../lib/markdown';
+import { splitContentIntoPages } from '../lib/paging';
 
 type TabletMode = 'edit' | 'preview' | 'layout' | 'export';
 type UtilityView = 'none' | 'saved' | 'settings';
@@ -77,6 +78,13 @@ export function TabletWorkspace({
   const [landscapeFocus, setLandscapeFocus] = React.useState<LandscapeFocus>('split');
   const [activePreviewPage, setActivePreviewPage] = React.useState<number | null>(null);
   const [landscapeFormat, setLandscapeFormat] = React.useState<'Book' | 'Zine' | 'Catalogue' | 'Report'>('Book');
+  const [portraitLayoutMargin, setPortraitLayoutMargin] = React.useState(24);
+  const [landscapeLayoutMargin, setLandscapeLayoutMargin] = React.useState(24);
+  const [flowKeepHeadings, setFlowKeepHeadings] = React.useState(true);
+  const [flowAvoidBreaks, setFlowAvoidBreaks] = React.useState(true);
+  const [flowHeaderFooter, setFlowHeaderFooter] = React.useState(true);
+  const [landscapeKeepHeadings, setLandscapeKeepHeadings] = React.useState(true);
+  const [landscapeAvoidBreaks, setLandscapeAvoidBreaks] = React.useState(true);
   const headings = React.useMemo(
     () =>
       content
@@ -89,6 +97,7 @@ export function TabletWorkspace({
   const preflight = analyzeDocument(content);
   const title = documentName.trim() || 'Untitled Document';
   const hasContent = content.trim().length > 0;
+  const previewChunks = hasContent ? splitContentIntoPages(content, 1800) : [''];
 
   const openLandscapeSheet = (value: LandscapeSheet) => setLandscapeSheet(value);
 
@@ -162,7 +171,7 @@ export function TabletWorkspace({
 
         <div className="min-w-0">
           <div className="mb-1 flex items-center justify-center gap-1.5">
-            <img src="/icon-app.svg" alt="Draft" className="h-4 w-4 shrink-0" />
+            <img src="/icon-app.svg" alt="Draft" className="h-4 w-4 shrink-0 dark:invert" />
             <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Draft</span>
           </div>
           {isRenamingTitle ? (
@@ -247,8 +256,8 @@ export function TabletWorkspace({
 
     if (tabletMode === 'preview') {
       return (
-        <div className="flex h-full min-h-0 flex-col bg-neutral-100">
-          <div className="border-b border-neutral-200 bg-white px-4 py-3">
+        <div className="flex h-full min-h-0 flex-col bg-[#f5f5f5]">
+          <div className="border-b border-[#e5e7eb] bg-[#ffffff] px-4 py-3">
             <p className="text-xs uppercase tracking-wide text-neutral-500">Layout Preview</p>
             <p className="mt-1 text-xs text-neutral-500">Matches export output.</p>
             <div className="mt-2 flex gap-2">
@@ -256,7 +265,9 @@ export function TabletWorkspace({
               <Button variant="outline" size="sm" className={spreadView ? 'bg-neutral-100 border-neutral-900' : ''} onClick={() => setSpreadView((p) => !p)}>Spread view</Button>
             </div>
             <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-              {[1, 2, 3, 4].map((n) => (
+              {previewChunks.slice(0, 6).map((_, index) => {
+                const n = index + 1;
+                return (
                 <button
                   key={n}
                   type="button"
@@ -272,27 +283,28 @@ export function TabletWorkspace({
                 >
                   {n}
                 </button>
-              ))}
+                );
+              })}
             </div>
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto p-4">
             <div className="mx-auto max-w-xl space-y-4">
-              {[1, 2].map((page) => (
+              {previewChunks.map((pageContent, index) => (
                 <button
-                  key={page}
+                  key={`tablet-preview-page-${index + 1}`}
                   type="button"
-                  className="relative w-full rounded-lg bg-white p-6 text-left shadow-sm"
+                  className="relative w-full rounded-lg bg-[#ffffff] p-6 text-left shadow-sm"
                   onClick={() => {
-                    setActivePreviewPage(page);
+                    setActivePreviewPage(index + 1);
                     window.setTimeout(() => setActivePreviewPage(null), 900);
                   }}
                 >
-                  <div className="prose prose-sm max-w-none text-neutral-700">
-                    {hasContent ? <ReactMarkdown urlTransform={markdownUrlTransform}>{content}</ReactMarkdown> : <p className="text-sm text-neutral-500">Preview will appear here as content is added.</p>}
+                  <div className="prose prose-sm max-w-none text-[#404040]">
+                    {hasContent ? <ReactMarkdown urlTransform={markdownUrlTransform}>{pageContent}</ReactMarkdown> : <p className="text-sm text-[#6b7280]">Preview will appear here as content is added.</p>}
                   </div>
-                  {showMargins && <div className="pointer-events-none absolute inset-0 rounded-lg border-[18px] border-neutral-100" />}
-                  {activePreviewPage === page && (
-                    <div className="absolute right-3 bottom-3 rounded-md bg-neutral-900 px-2 py-1 text-xs text-white">Page {page}</div>
+                  {showMargins && <div className="pointer-events-none absolute inset-0 rounded-lg border-[18px] border-[#f5f5f5]" />}
+                  {activePreviewPage === index + 1 && (
+                    <div className="absolute right-3 bottom-3 rounded-md bg-neutral-900 px-2 py-1 text-xs text-white">Page {index + 1}</div>
                   )}
                 </button>
               ))}
@@ -338,7 +350,7 @@ export function TabletWorkspace({
               </select>
               <div>
                 <div className="mb-2 text-xs uppercase tracking-wide text-neutral-500">Margins</div>
-                <Slider defaultValue={[24]} min={8} max={48} step={1} />
+                <Slider value={[portraitLayoutMargin]} onValueChange={(value) => setPortraitLayoutMargin(value[0] ?? portraitLayoutMargin)} min={8} max={48} step={1} />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="outline" size="sm" className={columns === 1 ? 'bg-neutral-100 border-neutral-900' : ''} onClick={() => setColumns(1)}>1 Column</Button>
@@ -349,15 +361,15 @@ export function TabletWorkspace({
               <h3 className="text-sm font-semibold text-neutral-900">Advanced</h3>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-neutral-700">Keep headings with next</span>
-                <Switch defaultChecked />
+                <Switch checked={flowKeepHeadings} onCheckedChange={setFlowKeepHeadings} />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-neutral-700">Avoid breaks in blocks</span>
-                <Switch defaultChecked />
+                <Switch checked={flowAvoidBreaks} onCheckedChange={setFlowAvoidBreaks} />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-neutral-700">Header/footer</span>
-                <Switch defaultChecked />
+                <Switch checked={flowHeaderFooter} onCheckedChange={setFlowHeaderFooter} />
               </div>
             </div>
           </div>
@@ -366,14 +378,14 @@ export function TabletWorkspace({
     }
 
     return (
-      <div className="flex h-full min-h-0 flex-col bg-white">
-        <div className="border-b border-neutral-200 px-4 py-3">
+      <div className="flex h-full min-h-0 flex-col bg-[#ffffff]">
+        <div className="border-b border-[#e5e7eb] px-4 py-3">
           <p className="text-xs uppercase tracking-wide text-neutral-500">Final preview</p>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3">
           <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1">
             {[1, 2, 3].map((page) => (
-              <div key={page} className="aspect-[1/1.414] w-[220px] shrink-0 snap-center rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+              <div key={page} className="aspect-[1/1.414] w-[220px] shrink-0 snap-center rounded-lg border border-[#e5e7eb] bg-[#ffffff] p-4 shadow-sm">
                 <div className="text-xs text-neutral-400">Page {page}</div>
               </div>
             ))}
@@ -448,17 +460,17 @@ export function TabletWorkspace({
             <option>A4</option>
             <option>Letter</option>
           </select>
-          <Slider defaultValue={[24]} min={8} max={48} step={1} />
+          <Slider value={[landscapeLayoutMargin]} onValueChange={(value) => setLandscapeLayoutMargin(value[0] ?? landscapeLayoutMargin)} min={8} max={48} step={1} />
         </div>
         <div className="space-y-2">
           <label className="text-xs uppercase tracking-wide text-neutral-500">Flow rules</label>
           <div className="flex items-center justify-between">
             <span className="text-sm text-neutral-700">Keep headings with next</span>
-            <Switch defaultChecked />
+            <Switch checked={landscapeKeepHeadings} onCheckedChange={setLandscapeKeepHeadings} />
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-neutral-700">Avoid breaks in blocks</span>
-            <Switch defaultChecked />
+            <Switch checked={landscapeAvoidBreaks} onCheckedChange={setLandscapeAvoidBreaks} />
           </div>
         </div>
       </div>
@@ -488,13 +500,13 @@ export function TabletWorkspace({
           </div>
         )}
         {landscapeFocus !== 'editor' && (
-          <div className={`${landscapeFocus === 'split' ? 'w-[55%]' : 'w-full'} min-h-0 overflow-y-auto bg-neutral-100 p-4`}>
+          <div className={`${landscapeFocus === 'split' ? 'w-[55%]' : 'w-full'} min-h-0 overflow-y-auto bg-[#f5f5f5] p-4`}>
             <div className="mx-auto max-w-2xl space-y-4">
-              {[1, 2].map((page) => (
-                <div key={page} className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-                  <div className="text-xs text-neutral-400 mb-2">Page {page}</div>
-                  <div className="prose prose-sm max-w-none text-neutral-700">
-                    {hasContent ? <ReactMarkdown urlTransform={markdownUrlTransform}>{content}</ReactMarkdown> : <p className="text-sm text-neutral-500">Preview will appear here.</p>}
+              {previewChunks.slice(0, 4).map((pageContent, index) => (
+                <div key={`tablet-landscape-page-${index + 1}`} className="rounded-lg border border-[#e5e7eb] bg-[#ffffff] p-6 shadow-sm">
+                  <div className="text-xs text-neutral-400 mb-2">Page {index + 1}</div>
+                  <div className="prose prose-sm max-w-none text-[#404040]">
+                    {hasContent ? <ReactMarkdown urlTransform={markdownUrlTransform}>{pageContent}</ReactMarkdown> : <p className="text-sm text-[#6b7280]">Preview will appear here.</p>}
                   </div>
                 </div>
               ))}

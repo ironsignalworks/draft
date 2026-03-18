@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download } from 'lucide-react';
+import { ChevronRight, Download } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Label } from './ui/label';
 import { Slider } from './ui/slider';
@@ -14,6 +14,8 @@ export interface InspectorSettings {
   sectionGap: number;
   paragraphGap: number;
   primaryFont: string;
+  textColor: string;
+  bodyFontSize: number;
   headingScale: number;
   bodyRhythm: number;
   typePreset: string;
@@ -32,18 +34,20 @@ export interface InspectorSettings {
 interface InspectorPanelProps {
   settings: InspectorSettings;
   onChange: (next: InspectorSettings) => void;
+  onReset?: () => void;
+  collapsed?: boolean;
 }
 
-export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
+export function InspectorPanel({ settings, onChange, onReset, collapsed = false }: InspectorPanelProps) {
   const setValue = <K extends keyof InspectorSettings>(key: K, value: InspectorSettings[K]) => {
     onChange({ ...settings, [key]: value });
   };
   const applyTypePreset = (preset: InspectorSettings['typePreset']) => {
-    const presetValues: Record<string, Pick<InspectorSettings, 'headingScale' | 'bodyRhythm' | 'paragraphGap'>> = {
-      Editorial: { headingScale: 16, bodyRhythm: 17, paragraphGap: 14 },
-      Technical: { headingScale: 14, bodyRhythm: 15, paragraphGap: 10 },
-      Compact: { headingScale: 13, bodyRhythm: 14, paragraphGap: 8 },
-      Resume: { headingScale: 12, bodyRhythm: 13, paragraphGap: 8 },
+    const presetValues: Record<string, Pick<InspectorSettings, 'headingScale' | 'bodyRhythm' | 'paragraphGap' | 'bodyFontSize'>> = {
+      Editorial: { headingScale: 16, bodyRhythm: 17, paragraphGap: 14, bodyFontSize: 14 },
+      Technical: { headingScale: 14, bodyRhythm: 15, paragraphGap: 10, bodyFontSize: 13 },
+      Compact: { headingScale: 13, bodyRhythm: 14, paragraphGap: 8, bodyFontSize: 12 },
+      Resume: { headingScale: 12, bodyRhythm: 13, paragraphGap: 8, bodyFontSize: 12 },
     };
     const next = presetValues[preset] ?? presetValues.Editorial;
     onChange({
@@ -52,21 +56,29 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
       headingScale: next.headingScale,
       bodyRhythm: next.bodyRhythm,
       paragraphGap: next.paragraphGap,
+      bodyFontSize: next.bodyFontSize,
     });
   };
 
   return (
-    <div className="h-full bg-white border-l border-neutral-200 flex flex-col">
-      <div className="px-6 py-4 border-b border-neutral-200">
-        <h2 className="text-sm font-semibold text-neutral-900">Inspector</h2>
+    <div className="relative h-full bg-white border-l border-neutral-200 flex flex-col">
+      <div className={`${collapsed ? 'px-2' : 'px-6'} py-3 border-b border-neutral-200 flex items-center gap-3`}>
+        <div className="flex items-center gap-2 shrink-0">
+          {!collapsed ? <h2 className="text-sm font-semibold text-neutral-900 leading-none">Inspector</h2> : null}
+        </div>
       </div>
 
+      {collapsed ? (
+        <div className="flex-1 flex items-center justify-center text-neutral-400">
+          <ChevronRight className="h-5 w-5" />
+        </div>
+      ) : (
       <Tabs defaultValue="layout" className="flex-1 min-h-0 flex flex-col min-w-0">
         <TabsList className="grid h-auto w-full grid-cols-2 border-b border-neutral-200 bg-transparent p-2 gap-2">
-          <TabsTrigger value="layout" className="h-10 rounded-md border border-neutral-300 bg-white shadow-sm data-[state=active]:border-neutral-900 data-[state=active]:bg-neutral-100">Layout</TabsTrigger>
-          <TabsTrigger value="typography" className="h-10 rounded-md border border-neutral-300 bg-white shadow-sm data-[state=active]:border-neutral-900 data-[state=active]:bg-neutral-100">Typography</TabsTrigger>
-          <TabsTrigger value="header" className="h-10 rounded-md border border-neutral-300 bg-white shadow-sm data-[state=active]:border-neutral-900 data-[state=active]:bg-neutral-100">Header/Footer</TabsTrigger>
-          <TabsTrigger value="export" className="h-10 rounded-md border border-neutral-300 bg-white shadow-sm data-[state=active]:border-neutral-900 data-[state=active]:bg-neutral-100">Export</TabsTrigger>
+          <TabsTrigger value="layout" className="h-10 rounded-md border border-neutral-300 bg-white shadow-sm text-center data-[state=active]:border-neutral-900 data-[state=active]:bg-neutral-100">Layout</TabsTrigger>
+          <TabsTrigger value="typography" className="h-10 rounded-md border border-neutral-300 bg-white shadow-sm text-center data-[state=active]:border-neutral-900 data-[state=active]:bg-neutral-100">Typography</TabsTrigger>
+          <TabsTrigger value="header" className="h-10 rounded-md border border-neutral-300 bg-white shadow-sm text-center data-[state=active]:border-neutral-900 data-[state=active]:bg-neutral-100">Header/Footer</TabsTrigger>
+          <TabsTrigger value="export" className="h-10 rounded-md border border-neutral-300 bg-white shadow-sm text-center data-[state=active]:border-neutral-900 data-[state=active]:bg-neutral-100">Export</TabsTrigger>
         </TabsList>
 
         <ScrollArea className="flex-1 min-h-0">
@@ -74,6 +86,11 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-neutral-900">Page layout</h3>
               <p className="text-xs text-neutral-500">Adjust document dimensions and structure.</p>
+              {onReset ? (
+                <Button type="button" variant="outline" size="sm" className="h-9 mt-1" onClick={onReset}>
+                  Reset specs
+                </Button>
+              ) : null}
             </div>
 
             <Separator />
@@ -88,6 +105,7 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
                     <span className="text-sm text-neutral-500">{settings.margins[edge]}mm</span>
                   </div>
                   <Slider
+                    aria-label={`${edge[0].toUpperCase() + edge.slice(1)} margin`}
                     value={[settings.margins[edge]]}
                     onValueChange={(value) => onChange({ ...settings, margins: { ...settings.margins, [edge]: value[0] ?? settings.margins[edge] } })}
                     max={50}
@@ -103,8 +121,8 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
               <Label className="text-xs uppercase tracking-wide text-neutral-500">Columns</Label>
               <p className="text-xs text-neutral-500">Split content into multiple reading columns.</p>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className={`flex-1 ${settings.columns === 1 ? 'bg-neutral-100 border-neutral-900' : ''}`} onClick={() => setValue('columns', 1)}>1 Column</Button>
-                <Button variant="outline" size="sm" className={`flex-1 ${settings.columns === 2 ? 'bg-neutral-100 border-neutral-900' : ''}`} onClick={() => setValue('columns', 2)}>2 Columns</Button>
+                <Button variant="outline" size="sm" className={`h-9 flex-1 ${settings.columns === 1 ? 'bg-neutral-100 border-neutral-900' : ''}`} onClick={() => setValue('columns', 1)}>1 Column</Button>
+                <Button variant="outline" size="sm" className={`h-9 flex-1 ${settings.columns === 2 ? 'bg-neutral-100 border-neutral-900' : ''}`} onClick={() => setValue('columns', 2)}>2 Columns</Button>
               </div>
             </div>
 
@@ -118,14 +136,14 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
                   <span className="text-sm text-neutral-700">Section gap</span>
                   <span className="text-sm text-neutral-500">{settings.sectionGap}px</span>
                 </div>
-                <Slider value={[settings.sectionGap]} onValueChange={(value) => setValue('sectionGap', value[0] ?? settings.sectionGap)} min={8} max={64} step={2} />
+                <Slider aria-label="Section gap" value={[settings.sectionGap]} onValueChange={(value) => setValue('sectionGap', value[0] ?? settings.sectionGap)} min={8} max={64} step={2} />
               </div>
               <div>
                 <div className="flex justify-between mb-2">
                   <span className="text-sm text-neutral-700">Paragraph gap</span>
                   <span className="text-sm text-neutral-500">{settings.paragraphGap}px</span>
                 </div>
-                <Slider value={[settings.paragraphGap]} onValueChange={(value) => setValue('paragraphGap', value[0] ?? settings.paragraphGap)} min={4} max={40} step={1} />
+                <Slider aria-label="Paragraph gap" value={[settings.paragraphGap]} onValueChange={(value) => setValue('paragraphGap', value[0] ?? settings.paragraphGap)} min={4} max={40} step={1} />
               </div>
             </div>
           </TabsContent>
@@ -140,7 +158,7 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
 
             <div className="space-y-3">
               <Label className="text-xs uppercase tracking-wide text-neutral-500">Primary font</Label>
-              <select className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm bg-white" value={settings.primaryFont} onChange={(e) => setValue('primaryFont', e.target.value)}>
+              <select aria-label="Primary font" className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm bg-white" value={settings.primaryFont} onChange={(e) => setValue('primaryFont', e.target.value)}>
                 <option>Inter</option>
                 <option>IBM Plex Sans</option>
                 <option>Source Sans Pro</option>
@@ -152,9 +170,54 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
             <Separator />
 
             <div className="space-y-3">
+              <Label className="text-xs uppercase tracking-wide text-neutral-500">Text color</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={settings.textColor === '#111827' ? 'bg-neutral-100 border-neutral-900' : ''}
+                  onClick={() => setValue('textColor', '#111827')}
+                >
+                  Black
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={settings.textColor === '#404040' ? 'bg-neutral-100 border-neutral-900' : ''}
+                  onClick={() => setValue('textColor', '#404040')}
+                >
+                  Dark Gray
+                </Button>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-3">
+              <Label className="text-xs uppercase tracking-wide text-neutral-500">Body font size</Label>
+              <div className="flex justify-between mb-2"><span className="text-sm text-neutral-700">Size</span><span className="text-sm text-neutral-500">{settings.bodyFontSize}px</span></div>
+              <Slider aria-label="Body font size slider" value={[settings.bodyFontSize]} onValueChange={(value) => setValue('bodyFontSize', value[0] ?? settings.bodyFontSize)} min={1} max={1200} step={1} />
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={settings.bodyFontSize}
+                aria-label="Body font size"
+                onChange={(e) => {
+                  const parsed = Number.parseInt(e.target.value, 10);
+                  if (Number.isNaN(parsed)) return;
+                  setValue('bodyFontSize', Math.max(1, parsed));
+                }}
+                className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm"
+              />
+            </div>
+
+            <Separator />
+
+            <div className="space-y-3">
               <Label className="text-xs uppercase tracking-wide text-neutral-500">Heading scale</Label>
               <div className="flex justify-between mb-2"><span className="text-sm text-neutral-700">Scale factor</span><span className="text-sm text-neutral-500">{(settings.headingScale / 10).toFixed(1)}</span></div>
-              <Slider value={[settings.headingScale]} onValueChange={(value) => setValue('headingScale', value[0] ?? settings.headingScale)} min={10} max={25} step={1} />
+              <Slider aria-label="Heading scale" value={[settings.headingScale]} onValueChange={(value) => setValue('headingScale', value[0] ?? settings.headingScale)} min={10} max={25} step={1} />
             </div>
 
             <Separator />
@@ -162,7 +225,7 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
             <div className="space-y-3">
               <Label className="text-xs uppercase tracking-wide text-neutral-500">Body rhythm</Label>
               <div className="flex justify-between mb-2"><span className="text-sm text-neutral-700">Paragraph spacing</span><span className="text-sm text-neutral-500">{(settings.bodyRhythm / 10).toFixed(1)}</span></div>
-              <Slider value={[settings.bodyRhythm]} onValueChange={(value) => setValue('bodyRhythm', value[0] ?? settings.bodyRhythm)} min={10} max={25} step={1} />
+              <Slider aria-label="Body rhythm" value={[settings.bodyRhythm]} onValueChange={(value) => setValue('bodyRhythm', value[0] ?? settings.bodyRhythm)} min={10} max={25} step={1} />
             </div>
 
             <Separator />
@@ -171,7 +234,7 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
               <Label className="text-xs uppercase tracking-wide text-neutral-500">Presets</Label>
               <div className="grid grid-cols-2 gap-2">
                 {['Editorial', 'Technical', 'Compact', 'Resume'].map((preset) => (
-                  <Button key={preset} variant="outline" size="sm" className={settings.typePreset === preset ? 'bg-neutral-100 border-neutral-900' : ''} onClick={() => applyTypePreset(preset)}>{preset}</Button>
+                  <Button key={preset} variant="outline" size="sm" className={`h-9 ${settings.typePreset === preset ? 'bg-neutral-100 border-neutral-900' : ''}`} onClick={() => applyTypePreset(preset)}>{preset}</Button>
                 ))}
               </div>
             </div>
@@ -188,7 +251,7 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
             <div className="space-y-3">
               <Label className="text-xs uppercase tracking-wide text-neutral-500">Header content</Label>
               <p className="text-xs text-neutral-500">Shown at the top of each page.</p>
-              <input type="text" value={settings.headerContent} onChange={(e) => setValue('headerContent', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm" />
+              <input aria-label="Header content" type="text" value={settings.headerContent} onChange={(e) => setValue('headerContent', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm" />
             </div>
 
             <Separator />
@@ -196,7 +259,7 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
             <div className="space-y-3">
               <Label className="text-xs uppercase tracking-wide text-neutral-500">Footer content</Label>
               <p className="text-xs text-neutral-500">Often used for page numbers or metadata.</p>
-              <input type="text" value={settings.footerContent} onChange={(e) => setValue('footerContent', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm" />
+              <input aria-label="Footer content" type="text" value={settings.footerContent} onChange={(e) => setValue('footerContent', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm" />
             </div>
 
             <Separator />
@@ -211,7 +274,7 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
               </div>
               {settings.addSignature && (
                 <div className="space-y-2">
-                  <input type="text" value={settings.signatureLabel} onChange={(e) => setValue('signatureLabel', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm" />
+                  <input aria-label="Signature label" type="text" value={settings.signatureLabel} onChange={(e) => setValue('signatureLabel', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm" />
                   <div className="flex items-center gap-2">
                     <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('signature-import-input')?.click()}>
                       <Download className="w-4 h-4" />
@@ -238,7 +301,7 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
 
             <div className="space-y-3">
               <Label className="text-xs uppercase tracking-wide text-neutral-500">Numbering format</Label>
-              <select className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm bg-white" value={settings.numberingFormat} onChange={(e) => setValue('numberingFormat', e.target.value as InspectorSettings['numberingFormat'])}>
+              <select aria-label="Numbering format" className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm bg-white" value={settings.numberingFormat} onChange={(e) => setValue('numberingFormat', e.target.value as InspectorSettings['numberingFormat'])}>
                 <option value="bottom-center">Bottom Center</option>
                 <option value="bottom-right">Bottom Right</option>
                 <option value="top-right">Top Right</option>
@@ -251,7 +314,7 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
             <div className="space-y-3">
               <Label className="text-xs uppercase tracking-wide text-neutral-500">Quality</Label>
               <div className="flex justify-between mb-2"><span className="text-sm text-neutral-700">Print Quality</span><span className="text-sm text-neutral-500">{settings.exportQuality}%</span></div>
-              <Slider value={[settings.exportQuality]} onValueChange={(value) => setValue('exportQuality', value[0] ?? settings.exportQuality)} max={100} step={5} />
+              <Slider aria-label="Export quality" value={[settings.exportQuality]} onValueChange={(value) => setValue('exportQuality', value[0] ?? settings.exportQuality)} max={100} step={5} />
             </div>
 
             <Separator />
@@ -262,6 +325,7 @@ export function InspectorPanel({ settings, onChange }: InspectorPanelProps) {
           </TabsContent>
         </ScrollArea>
       </Tabs>
+      )}
     </div>
   );
 }

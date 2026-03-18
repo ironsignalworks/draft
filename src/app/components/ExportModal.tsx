@@ -14,6 +14,7 @@ import ReactMarkdown from 'react-markdown';
 import { markdownUrlTransform } from '../lib/markdown';
 import { toast } from 'sonner';
 import type { InspectorSettings } from './InspectorPanel';
+import '../../styles/export-modal.css';
 
 interface ExportModalProps {
   open: boolean;
@@ -34,8 +35,44 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
   const [donationTrigger, setDonationTrigger] = useState<'export' | 'share' | 'saved' | null>(null);
   const preflight = analyzeDocument(content);
   const hasMajorIssues = preflight.severity === 'major';
-  const estimatedPages = Math.max(1, Math.ceil(Math.max(content.trim().length, 1) / 1800));
-  const previewPages = splitContentIntoPages(content, 1800).slice(0, 4);
+  const mmToPx = (mm: number) => Math.round(mm * 3.78);
+  const margins = {
+    top: mmToPx(inspectorSettings?.margins.top ?? 25),
+    bottom: mmToPx(inspectorSettings?.margins.bottom ?? 25),
+    left: mmToPx(inspectorSettings?.margins.left ?? 20),
+    right: mmToPx(inspectorSettings?.margins.right ?? 20),
+  };
+  const bodyFontSize = inspectorSettings?.bodyFontSize ?? 14;
+  const bodyRhythm = (inspectorSettings?.bodyRhythm ?? 16) / 10;
+  const headingScale = (inspectorSettings?.headingScale ?? 15) / 10;
+  const paragraphGap = inspectorSettings?.paragraphGap ?? 12;
+  const textColor = inspectorSettings?.textColor ?? '#404040';
+  const columns = inspectorSettings?.columns === 2 ? 2 : 1;
+  const sectionGap = inspectorSettings?.sectionGap ?? 24;
+  const pageWidth = 794;
+  const pageHeight = 1123;
+  const headerFooterReservePx =
+    (inspectorSettings?.headerContent?.trim() ? 20 : 0) + (inspectorSettings?.footerContent?.trim() ? 20 : 0);
+  const availableHeightPx = Math.max(120, pageHeight - margins.top - margins.bottom - headerFooterReservePx);
+  const availableWidthPx = Math.max(120, pageWidth - margins.left - margins.right);
+  const columnGapPx = columns === 2 ? sectionGap : 0;
+  const columnWidthPx = Math.max(60, (availableWidthPx - columnGapPx) / columns);
+  const lineHeightPx = Math.max(8, bodyFontSize * bodyRhythm);
+  const linesPerColumn = Math.max(1, Math.floor(availableHeightPx / lineHeightPx));
+  const avgCharWidthPx = Math.max(3, bodyFontSize * 0.56);
+  const charsPerLine = Math.max(6, Math.floor(columnWidthPx / avgCharWidthPx));
+  const baseDensityFactor = 0.92;
+  const paragraphDensityFactor = Math.max(0.55, Math.min(1.15, 1 - (paragraphGap - 12) / 80));
+  const headingDensityFactor = Math.max(0.7, Math.min(1.1, 1 - (headingScale - 1.5) * 0.08));
+  const approxCharsPerPage = Math.max(
+    20,
+    Math.floor(linesPerColumn * charsPerLine * columns * baseDensityFactor * paragraphDensityFactor * headingDensityFactor),
+  );
+  const estimatedPages = Math.max(1, splitContentIntoPages(content, approxCharsPerPage, charsPerLine).length);
+  const previewPages = splitContentIntoPages(content, approxCharsPerPage, charsPerLine).slice(0, 4);
+  const modalPreviewScale = 0.28;
+  const modalPreviewWidth = Math.round(pageWidth * modalPreviewScale);
+  const modalPreviewHeight = Math.round(pageHeight * modalPreviewScale);
 
   useEffect(() => {
     if (!open) return;
@@ -60,24 +97,24 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl h-[80vh] gap-0 p-0">
-        <DialogHeader className="px-6 pt-6 pb-4">
+      <DialogContent className="h-[92vh] w-[98vw] max-w-none sm:h-[90vh] sm:w-[min(98vw,1280px)] sm:max-w-[min(98vw,1280px)] gap-0 p-0">
+        <DialogHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4">
           <DialogTitle className="text-xl">Export document</DialogTitle>
           <p className="text-sm text-neutral-500">Preview and finalize output.</p>
         </DialogHeader>
 
-        <div className="flex gap-6 flex-1 overflow-hidden px-6 pb-6">
+        <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden px-4 pb-4 sm:px-6 sm:pb-6 lg:flex-row lg:gap-6">
           {/* Preview */}
-          <div className="flex-1 flex flex-col">
-            <div className="mb-3">
+          <div className="flex min-h-0 min-w-0 shrink-0 flex-col lg:w-[360px]">
+            <div className="mb-2 sm:mb-3">
               <Label className="text-xs uppercase tracking-wide text-neutral-500">Final preview</Label>
             </div>
-            <ScrollArea className="flex-1 bg-neutral-100 rounded-lg p-6">
+            <ScrollArea className="h-[220px] rounded-lg bg-[#f5f5f5] p-3 sm:h-[260px] sm:p-4 lg:h-full lg:flex-1 lg:p-5">
               {isPreparingPreview ? (
                 <div className="h-full min-h-[320px] flex items-center justify-center">
                   <div className="text-center">
-                    <h3 className="text-base font-semibold text-neutral-800">Preparing preview</h3>
-                    <p className="mt-2 text-sm text-neutral-600">
+                    <h3 className="text-base font-semibold text-[#262626]">Preparing preview</h3>
+                    <p className="mt-2 text-sm text-[#525252]">
                       Draft is generating a final layout for export.
                     </p>
                   </div>
@@ -85,11 +122,42 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
               ) : (
                 <div className="space-y-4">
                   {previewPages.map((page, index) => (
-                    <div key={`export-preview-${index + 1}`} className="relative bg-white rounded shadow-sm p-8 aspect-[1/1.414] overflow-hidden">
-                      <div className="prose prose-sm max-w-none text-neutral-700">
-                        <ReactMarkdown urlTransform={markdownUrlTransform}>{page}</ReactMarkdown>
+                    <div
+                      key={`export-preview-${index + 1}`}
+                      className={`export-page-preview relative mx-auto overflow-hidden rounded bg-[#ffffff] shadow-sm ${
+                        index > 0 ? 'hidden lg:block' : ''
+                      }`}
+                    >
+                      <div className="export-page-preview-inner relative">
+                        {!!inspectorSettings?.headerContent && (
+                          <div className="pointer-events-none absolute top-3 left-4 right-4 z-20 text-[10px] uppercase tracking-wide text-[#6b7280]">
+                            {inspectorSettings.headerContent}
+                          </div>
+                        )}
+                        <div
+                          className={`export-page-content max-w-none h-full overflow-hidden break-words [overflow-wrap:anywhere]${
+                            columns === 2 ? ' export-page-content--two-columns' : ''
+                          }`}
+                        >
+                          <ReactMarkdown
+                            urlTransform={markdownUrlTransform}
+                            components={{
+                              p: (props) => <p {...props} className="export-page-paragraph" />,
+                              h1: (props) => <h1 {...props} className="export-page-heading export-page-heading--h1" />,
+                              h2: (props) => <h2 {...props} className="export-page-heading export-page-heading--h2" />,
+                              h3: (props) => <h3 {...props} className="export-page-heading export-page-heading--h3" />,
+                            }}
+                          >
+                            {page}
+                          </ReactMarkdown>
+                        </div>
+                        {!!inspectorSettings?.footerContent && (
+                          <div className="pointer-events-none absolute bottom-3 left-4 right-4 z-20 text-[10px] uppercase tracking-wide text-[#6b7280]">
+                            {inspectorSettings.footerContent}
+                          </div>
+                        )}
                       </div>
-                      <div className="pointer-events-none absolute bottom-3 right-4 text-[10px] text-neutral-400">
+                      <div className="pointer-events-none absolute bottom-3 right-4 text-[10px] text-[#9ca3af]">
                         {index + 1}
                       </div>
                     </div>
@@ -100,9 +168,26 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
           </div>
 
           {/* Settings */}
-          <div className="w-80 flex flex-col">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            {donationTrigger && (
+              <div className="sticky top-0 z-20 mb-3 rounded-xl border border-emerald-300 bg-emerald-50 p-5 shadow-sm sm:p-6">
+                <h3 className="text-base font-semibold text-emerald-900 sm:text-lg">Support Iron Signal Works</h3>
+                <p className="mt-2 text-sm leading-6 text-emerald-900/90 sm:text-base">
+                  Iron Signal Works tools stay free, independent, and ad-free because some users choose to support them.
+                </p>
+                <a
+                  href="https://donate.stripe.com/4gMdR25le5GXenHbrT5Ne00"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 inline-flex w-full items-center justify-center rounded-md bg-emerald-700 px-4 py-2.5 text-base font-medium text-white transition-colors hover:bg-emerald-800"
+                >
+                  Donate via Stripe
+                </a>
+              </div>
+            )}
+
             <ScrollArea className="flex-1">
-              <div className="space-y-6 pr-2">
+              <div className="space-y-6 pr-1 sm:pr-2">
                 {hasMajorIssues && (
                   <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
                     <h3 className="text-sm font-semibold text-amber-900">Export paused</h3>
@@ -133,9 +218,7 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
                 )}
 
                 <div className="space-y-3">
-                  <Label className="text-xs uppercase tracking-wide text-neutral-500">
-                    Page Count
-                  </Label>
+                  <Label className="text-xs uppercase tracking-wide text-neutral-500">Page Count</Label>
                   <div className="text-2xl font-semibold text-neutral-900">{estimatedPages} pages</div>
                 </div>
 
@@ -156,33 +239,6 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
                 </div>
 
                 <Separator />
-
-                {donationTrigger && (
-                  <>
-                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 space-y-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
-                        {donationTrigger === 'export'
-                          ? 'After export finished'
-                          : donationTrigger === 'share'
-                            ? 'After share generated'
-                            : 'After project saved'}
-                      </p>
-                      <h3 className="text-sm font-semibold text-emerald-900">Support Iron Signal Works</h3>
-                      <p className="text-sm text-emerald-900/90">
-                        Iron Signal Works tools stay free, independent, and ad-free because some users choose to support them.
-                      </p>
-                      <a
-                        href="https://donate.stripe.com/4gMdR25le5GXenHbrT5Ne00"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-800"
-                      >
-                        Donate via Stripe
-                      </a>
-                    </div>
-                    <Separator />
-                  </>
-                )}
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -234,6 +290,7 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
                       compression,
                       includeMetadata,
                       watermark,
+                      fontSize: inspectorSettings?.bodyFontSize ?? 14,
                     },
                     createdAt: new Date().toISOString(),
                   });
@@ -266,6 +323,7 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
                       compression,
                       includeMetadata,
                       watermark,
+                      fontSize: inspectorSettings?.bodyFontSize ?? 14,
                     },
                     createdAt: new Date().toISOString(),
                   });
@@ -273,7 +331,18 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
                     toast.error('Document is too large for URL export. Use Download PDF.');
                     return;
                   }
-                  window.open(shareUrl, '_blank', 'noopener,noreferrer');
+                  try {
+                    const trustedOrigin = 'https://draft.iron.signal.works';
+                    const url = new URL(shareUrl);
+                    if (url.origin !== trustedOrigin) {
+                      toast.error('Invalid export URL. Use Download PDF instead.');
+                      return;
+                    }
+                    window.open(url.toString(), '_blank', 'noopener,noreferrer');
+                  } catch {
+                    toast.error('Invalid export URL. Use Download PDF instead.');
+                    return;
+                  }
                   setDonationTrigger('share');
                 }}
               >
@@ -290,6 +359,7 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
                     compression,
                     includeMetadata,
                     watermark,
+                    fontSize: inspectorSettings?.bodyFontSize ?? 14,
                   });
                   if (result === 'failed') {
                     toast.error('Could not generate PDF file.');

@@ -32,10 +32,10 @@ export function SavedDocuments({
   const renderPreview = (content: string) => {
     const firstPage = splitContentIntoPages(content, 1300)[0]?.trim() ?? '';
     if (!firstPage) {
-      return <div className="text-xs text-neutral-400">No content</div>;
+      return <div className="text-xs text-[#9ca3af]">No content</div>;
     }
     return (
-      <div className="prose prose-sm max-w-none text-neutral-700 pointer-events-none">
+      <div className="prose prose-sm max-w-none pointer-events-none text-[#404040]">
         <ReactMarkdown urlTransform={markdownUrlTransform}>{firstPage}</ReactMarkdown>
       </div>
     );
@@ -63,7 +63,7 @@ export function SavedDocuments({
                   className="p-6 cursor-pointer hover:shadow-lg transition-shadow border-neutral-200 hover:border-neutral-300"
                   onClick={() => onOpenDocument?.(doc.id)}
                 >
-                  <div className="aspect-[3/4] bg-white rounded-lg mb-4 border border-neutral-200 overflow-hidden p-3">
+                  <div className="aspect-[3/4] bg-[#ffffff] rounded-lg mb-4 border border-[#e5e7eb] overflow-hidden p-3">
                     <div className="h-full w-full overflow-hidden">
                       {renderPreview(doc.content)}
                     </div>
