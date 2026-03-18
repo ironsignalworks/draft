@@ -1,4 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const expectedKeys = [
   'VITE_SENTRY_DSN',
@@ -15,7 +17,15 @@ const expectedKeys = [
   'VITE_FEATURE_NEW_UI',
 ];
 
-const raw = readFileSync('.env.example', 'utf8');
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+const envExamplePath = resolve(scriptDir, '..', '.env.example');
+
+if (!existsSync(envExamplePath)) {
+  console.error(`Missing required env contract file: ${envExamplePath}`);
+  process.exit(1);
+}
+
+const raw = readFileSync(envExamplePath, 'utf8');
 const keys = raw
   .split(/\r?\n/)
   .map((line) => line.trim())
