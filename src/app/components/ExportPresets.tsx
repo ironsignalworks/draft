@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollArea } from './ui/scroll-area';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
-import { FileDown, Settings, Copy, Trash2 } from 'lucide-react';
+import { Check, FileDown, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { exportPdfDocument } from '../lib/export';
+import type { InspectorSettings } from './InspectorPanel';
 
 interface ExportPreset {
   id: string;
@@ -17,107 +17,94 @@ interface ExportPreset {
   };
 }
 
-const initialPresets: ExportPreset[] = [
-  {
-    id: '1',
-    name: 'High Quality Print',
-    description: 'Best for professional printing',
-    settings: { dpi: 300, compression: 'Low', quality: 'Maximum' },
-  },
-  {
-    id: '2',
-    name: 'Screen PDF',
-    description: 'Optimized for digital viewing',
-    settings: { dpi: 150, compression: 'Medium', quality: 'Good' },
-  },
-  {
-    id: '3',
-    name: 'Press Ready',
-    description: 'Commercial print specifications',
-    settings: { dpi: 300, compression: 'None', quality: 'Maximum' },
-  },
-  {
-    id: '4',
-    name: 'Compressed',
-    description: 'Smaller file size for sharing',
-    settings: { dpi: 72, compression: 'High', quality: 'Standard' },
-  },
-];
+const EXPORT_PRESETS_STORAGE_KEY = 'draft_export_presets';
 
 interface ExportPresetsProps {
-  content: string;
+  inspectorSettings: InspectorSettings;
+  onApplyTemplate: (settings: Pick<InspectorSettings, 'exportQuality' | 'compression' | 'includeMetadata' | 'watermark'>) => void;
 }
 
-export function ExportPresets({ content }: ExportPresetsProps) {
-  const [presets, setPresets] = useState<ExportPreset[]>(initialPresets);
-  const [activePresetId, setActivePresetId] = useState<string>(initialPresets[0]?.id ?? '');
+function qualityLabel(value: number): string {
+  if (value >= 90) return 'Maximum';
+  if (value >= 75) return 'High';
+  if (value >= 60) return 'Good';
+  return 'Standard';
+}
+
+function compressionLabel(enabled: boolean): string {
+  return enabled ? 'Medium' : 'None';
+}
+
+function qualityValue(value: string): number {
+  const normalized = value.toLowerCase();
+  if (normalized === 'maximum') return 95;
+  if (normalized === 'high') return 85;
+  if (normalized === 'good') return 75;
+  return 60;
+}
+
+function compressionEnabled(value: string): boolean {
+  return value.toLowerCase() !== 'none';
+}
+
+export function ExportPresets({ inspectorSettings, onApplyTemplate }: ExportPresetsProps) {
+  const [presets, setPresets] = useState<ExportPreset[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(EXPORT_PRESETS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as ExportPreset[];
+      if (Array.isArray(parsed)) {
+        setPresets(parsed);
+      }
+    } catch {
+      // ignore corrupt local cache
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(EXPORT_PRESETS_STORAGE_KEY, JSON.stringify(presets));
+  }, [presets]);
 
   const handleSaveCurrentPreset = () => {
     const nextIndex = presets.length + 1;
     const newPreset: ExportPreset = {
       id: crypto.randomUUID(),
-      name: `Current Preset ${nextIndex}`,
+      name: `Template ${nextIndex}`,
       description: 'Saved from current export configuration',
-      settings: { dpi: 150, compression: 'Medium', quality: 'High' },
+      settings: {
+        dpi: 150,
+        compression: compressionLabel(inspectorSettings.compression),
+        quality: qualityLabel(inspectorSettings.exportQuality),
+      },
     };
     setPresets((prev) => [newPreset, ...prev]);
-    toast.success('Preset saved');
+    toast.success('Template saved');
   };
 
   const handleDeletePreset = (presetId: string) => {
     setPresets((prev) => prev.filter((preset) => preset.id !== presetId));
-    toast.success('Preset removed');
+    toast.success('Template removed');
   };
 
-  const handleDuplicatePreset = (preset: ExportPreset) => {
-    const duplicate: ExportPreset = {
-      ...preset,
-      id: crypto.randomUUID(),
-      name: `${preset.name} Copy`,
-    };
-    setPresets((prev) => [duplicate, ...prev]);
-    toast.success('Preset duplicated');
-  };
-
-  const handleCopyPresetSettings = async (preset: ExportPreset) => {
-    const text = `Preset: ${preset.name}\nDPI: ${preset.settings.dpi}\nCompression: ${preset.settings.compression}\nQuality: ${preset.settings.quality}`;
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success('Preset settings copied');
-    } catch {
-      toast.error('Could not copy preset settings');
-    }
-  };
-
-  const handleExportWithPreset = (preset: ExportPreset, content: string) => {
-    const quality = preset.settings.quality.toLowerCase() === 'maximum' ? 95 : preset.settings.quality.toLowerCase() === 'good' ? 75 : 60;
-    const compression = preset.settings.compression.toLowerCase() !== 'none';
-    const result = exportPdfDocument(content, {
-      title: preset.name,
-      quality,
-      compression,
+  const handleApplyTemplate = (preset: ExportPreset) => {
+    onApplyTemplate({
+      exportQuality: qualityValue(preset.settings.quality),
+      compression: compressionEnabled(preset.settings.compression),
       includeMetadata: true,
       watermark: false,
     });
-    if (result === 'failed') {
-      toast.error('Could not generate PDF file.');
-      return;
-    }
-    if (result === 'print') {
-      toast.success(`Print dialog opened for "${preset.name}". Choose Save as PDF.`);
-      return;
-    }
-    toast.success(`Downloaded "${preset.name}"`);
+    toast.success(`Applied "${preset.name}"`);
   };
 
   return (
     <div className="h-full bg-white flex flex-col">
-      {/* Header */}
       <div className="px-6 py-4 border-b border-neutral-200 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-neutral-900">Export Presets</h2>
+          <h2 className="text-lg font-semibold text-neutral-900">Export Templates</h2>
           <p className="text-sm text-neutral-500 mt-1">
-            Manage your saved export configurations
+            Save templates and apply them when opening export.
           </p>
         </div>
         <Button
@@ -125,12 +112,21 @@ export function ExportPresets({ content }: ExportPresetsProps) {
           className="bg-neutral-900 hover:bg-neutral-800"
           onClick={handleSaveCurrentPreset}
         >
-          Save current preset
+          Save current template
         </Button>
       </div>
 
       <ScrollArea className="flex-1">
         <div className="p-6 space-y-4">
+          {presets.length === 0 && (
+            <Card className="p-8 border-2 border-dashed border-neutral-300">
+              <div className="text-center">
+                <h3 className="font-semibold text-neutral-900 mb-1">No templates yet</h3>
+                <p className="text-sm text-neutral-500">Save your current export settings to create the first template.</p>
+              </div>
+            </Card>
+          )}
+
           {presets.map((preset) => (
             <Card
               key={preset.id}
@@ -138,50 +134,22 @@ export function ExportPresets({ content }: ExportPresetsProps) {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                    <h3 className="font-semibold text-neutral-900 mb-1">
-                      {preset.name}
-                    </h3>
+                  <h3 className="font-semibold text-neutral-900 mb-1">{preset.name}</h3>
                   <p className="text-sm text-neutral-500">{preset.description}</p>
                 </div>
 
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`h-8 w-8 p-0 ${activePresetId === preset.id ? 'bg-neutral-100' : ''}`}
-                    onClick={() => {
-                      setActivePresetId(preset.id);
-                      toast.success(`Selected "${preset.name}"`);
-                    }}
-                    title="Use preset"
-                    aria-label={`Use preset ${preset.name}`}
-                  >
-                    <Settings className="w-4 h-4 text-neutral-500" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => handleDuplicatePreset(preset)}
-                    title="Duplicate preset"
-                    aria-label={`Duplicate preset ${preset.name}`}
-                  >
-                    <Copy className="w-4 h-4 text-neutral-500" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => handleDeletePreset(preset.id)}
-                    title="Delete preset"
-                    aria-label={`Delete preset ${preset.name}`}
-                  >
-                    <Trash2 className="w-4 h-4 text-neutral-500" />
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => handleDeletePreset(preset.id)}
+                  title="Delete template"
+                  aria-label={`Delete template ${preset.name}`}
+                >
+                  <Trash2 className="w-4 h-4 text-neutral-500" />
+                </Button>
               </div>
 
-              {/* Settings Summary */}
               <div className="grid grid-cols-3 gap-4 mb-4">
                 <div>
                   <div className="text-xs text-neutral-500 uppercase tracking-wide mb-1">
@@ -209,41 +177,36 @@ export function ExportPresets({ content }: ExportPresetsProps) {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   className="w-full gap-2"
-                  onClick={() => handleCopyPresetSettings(preset)}
+                  onClick={() => handleApplyTemplate(preset)}
                 >
-                  <Copy className="w-4 h-4" />
-                  Copy settings
+                  <Check className="w-4 h-4" />
+                  Apply template
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   className="w-full gap-2"
-                    onClick={() => handleExportWithPreset(preset, content)}
+                  onClick={() => handleApplyTemplate(preset)}
                 >
-                <FileDown className="w-4 h-4" />
-                  Export PDF
+                  <FileDown className="w-4 h-4" />
+                  Open export
                 </Button>
               </div>
             </Card>
           ))}
 
-          {/* Custom Preset Card */}
-          <Card
-            className="p-8 border-2 border-dashed border-neutral-300 hover:border-neutral-400 transition-colors cursor-pointer"
-            onClick={handleSaveCurrentPreset}
-          >
+          <Card className="p-8 border-2 border-dashed border-neutral-300 hover:border-neutral-400 transition-colors cursor-pointer" onClick={handleSaveCurrentPreset}>
             <div className="text-center">
               <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center mx-auto mb-3">
                 <FileDown className="w-6 h-6 text-neutral-500" />
               </div>
               <h3 className="font-semibold text-neutral-900 mb-1">
-                Save current preset
+                Save current template
               </h3>
               <p className="text-sm text-neutral-500">
                 Capture the current settings for reuse

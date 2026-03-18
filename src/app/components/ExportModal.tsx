@@ -32,7 +32,7 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
   const [compression, setCompression] = useState(inspectorSettings?.compression ?? true);
   const [includeMetadata, setIncludeMetadata] = useState(inspectorSettings?.includeMetadata ?? true);
   const [watermark, setWatermark] = useState(inspectorSettings?.watermark ?? false);
-  const [donationTrigger, setDonationTrigger] = useState<'export' | 'share' | 'saved' | null>(null);
+  const [donationTrigger, setDonationTrigger] = useState<'export' | null>(null);
   const preflight = analyzeDocument(content);
   const hasMajorIssues = preflight.severity === 'major';
   const mmToPx = (mm: number) => Math.round(mm * 3.78);
@@ -88,12 +88,6 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
     }, 900);
     return () => window.clearTimeout(timer);
   }, [open, inspectorSettings]);
-
-  useEffect(() => {
-    if (!open || !projectSavedAt) return;
-    if (Date.now() - projectSavedAt > 5000) return;
-    setDonationTrigger('saved');
-  }, [open, projectSavedAt]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -169,23 +163,6 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
 
           {/* Settings */}
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-            {donationTrigger && (
-              <div className="sticky top-0 z-20 mb-3 rounded-xl border border-emerald-300 bg-emerald-50 p-5 shadow-sm sm:p-6">
-                <h3 className="text-base font-semibold text-emerald-900 sm:text-lg">Support Iron Signal Works</h3>
-                <p className="mt-2 text-sm leading-6 text-emerald-900/90 sm:text-base">
-                  Iron Signal Works tools stay free, independent, and ad-free because some users choose to support them.
-                </p>
-                <a
-                  href="https://donate.stripe.com/4gMdR25le5GXenHbrT5Ne00"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 inline-flex w-full items-center justify-center rounded-md bg-emerald-700 px-4 py-2.5 text-base font-medium text-white transition-colors hover:bg-emerald-800"
-                >
-                  Donate via Stripe
-                </a>
-              </div>
-            )}
-
             <ScrollArea className="flex-1">
               <div className="space-y-6 pr-1 sm:pr-2">
                 {hasMajorIssues && (
@@ -301,7 +278,6 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
                   try {
                     await navigator.clipboard.writeText(shareUrl);
                     toast.success('Export link copied');
-                    setDonationTrigger('share');
                   } catch {
                     toast.error('Could not copy export link');
                   }
@@ -343,7 +319,6 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
                     toast.error('Invalid export URL. Use Download PDF instead.');
                     return;
                   }
-                  setDonationTrigger('share');
                 }}
               >
                 <Link2 className="w-4 h-4" />
@@ -380,6 +355,22 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
               <Button variant="outline" className="w-full" onClick={onClose}>
                 Back to document
               </Button>
+              {donationTrigger === 'export' && (
+                <div className="mt-3 rounded-xl border border-emerald-300 bg-emerald-50 p-4">
+                  <h3 className="text-sm font-semibold text-emerald-900">Support Iron Signal Works</h3>
+                  <p className="mt-1 text-sm text-emerald-900/90">
+                    Thanks for exporting with Draft. Support keeps the tool free and ad-free.
+                  </p>
+                  <a
+                    href="https://donate.stripe.com/4gMdR25le5GXenHbrT5Ne00"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex w-full items-center justify-center rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-800"
+                  >
+                    Donate via Stripe
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </div>

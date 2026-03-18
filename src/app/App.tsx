@@ -377,7 +377,15 @@ export default function App() {
     }
 
     if (activeNav === 'export') {
-      return <ExportPresets content={content} />;
+      return (
+        <ExportPresets
+          inspectorSettings={inspectorSettings}
+          onApplyTemplate={(settings) => {
+            setInspectorSettings((prev) => ({ ...prev, ...settings }));
+            setExportModalOpen(true);
+          }}
+        />
+      );
     }
 
     return (
