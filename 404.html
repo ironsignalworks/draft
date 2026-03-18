@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Draft</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <script>
+      (function redirectToSpaEntry() {
+        var basePath = '/draft/';
+        var path = window.location.pathname.replace(/^\/draft\/?/, '');
+        var query = window.location.search.replace(/^\?/, '');
+        var hash = window.location.hash || '';
+        var params = new URLSearchParams(query);
+        params.set('p', encodeURIComponent('/' + path));
+        window.location.replace(basePath + '?' + params.toString() + hash);
+      })();
+    </script>
+  </body>
+</html>
