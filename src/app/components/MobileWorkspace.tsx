@@ -68,7 +68,7 @@ export function MobileWorkspace({
   const [isRenamingTitle, setIsRenamingTitle] = React.useState(false);
   const [columns, setColumns] = React.useState<1 | 2>(1);
   const [utilityView, setUtilityView] = React.useState<UtilityView>('none');
-  const [activePreviewPage, setActivePreviewPage] = React.useState<number | null>(null);
+  const [activePreviewPage, setActivePreviewPage] = React.useState(1);
   const [layoutMargin, setLayoutMargin] = React.useState(24);
   const [layoutHeaderFooterEnabled, setLayoutHeaderFooterEnabled] = React.useState(true);
   const editorRef = React.useRef<HTMLTextAreaElement | null>(null);
@@ -77,6 +77,16 @@ export function MobileWorkspace({
   const trimmedContent = content.trim();
   const hasContent = trimmedContent.length > 0;
   const previewChunks = hasContent ? splitContentIntoPages(content, 1600) : [''];
+  const totalPreviewPages = previewChunks.length;
+  const currentPreviewPage = Math.min(Math.max(activePreviewPage, 1), totalPreviewPages);
+
+  React.useEffect(() => {
+    setActivePreviewPage((prev) => {
+      if (prev < 1) return 1;
+      if (prev > totalPreviewPages) return totalPreviewPages;
+      return prev;
+    });
+  }, [totalPreviewPages]);
 
   const applyInlineWrap = (prefix: string, suffix = '') => {
     const textarea = editorRef.current;
@@ -97,19 +107,18 @@ export function MobileWorkspace({
 
   const renderEditorMode = () => (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="border-b border-neutral-200 bg-white px-4 py-3">
+      <div className="border-b border-neutral-200 bg-white px-4 py-2">
         <p className="text-xs uppercase tracking-wide text-neutral-500">Content</p>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
+      <div className="flex-1 min-h-0 px-4 py-3">
         <Textarea
           ref={editorRef}
           value={content}
           onChange={(e) => onContentChange(e.target.value)}
-          className="h-full min-h-[52vh] rounded-lg border-neutral-300 bg-white text-sm leading-relaxed"
+          className="h-full min-h-0 rounded-lg border-neutral-300 bg-white text-sm leading-relaxed"
           placeholder="Start writing or paste Markdown..."
         />
-        <p className="mt-2 text-xs text-neutral-500">Layout updates automatically in Preview mode.</p>
       </div>
 
       <div className="border-t border-neutral-200 bg-white px-4 py-2">
@@ -134,48 +143,55 @@ export function MobileWorkspace({
 
   const renderPreviewMode = () => (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#f5f5f5]">
-      <div className="border-b border-[#e5e7eb] bg-[#ffffff] px-4 py-3">
+      <div className="border-b border-[#e5e7eb] bg-[#ffffff] px-4 py-2">
         <p className="text-xs uppercase tracking-wide text-neutral-500">Layout Preview</p>
-        <p className="mt-1 text-xs text-neutral-500">Matches export output.</p>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto p-4">
-        <div className="mx-auto w-full max-w-md space-y-4">
-          {previewChunks.map((pageContent, index) => (
-            <button
-              key={`mobile-preview-page-${index + 1}`}
-              type="button"
-              className="relative block w-full rounded-lg bg-[#ffffff] p-6 text-left shadow-sm"
-              onClick={() => {
-                setActivePreviewPage(index + 1);
-                window.setTimeout(() => setActivePreviewPage(null), 1000);
-              }}
-            >
-              <div className="prose prose-sm max-w-none text-[#404040]">
-                {hasContent ? (
-                  <ReactMarkdown urlTransform={markdownUrlTransform}>{pageContent}</ReactMarkdown>
-                ) : (
-                  <div className="space-y-2 text-center text-sm text-[#6b7280]">
-                    <h3 className="text-base font-semibold text-[#262626]">Preview will appear here</h3>
-                    <p>As you add content, Draft will format it into pages automatically.</p>
-                  </div>
-                )}
-              </div>
-              {activePreviewPage === index + 1 && (
-                <div className="absolute right-3 bottom-3 rounded-md bg-neutral-900 px-2 py-1 text-xs text-white">
-                  Page {index + 1}
+      <div className="flex-1 min-h-0 p-4">
+        <div className="mx-auto flex h-full w-full max-w-md flex-col gap-3">
+          <div className="min-h-0 flex-1 rounded-lg bg-[#ffffff] p-4 shadow-sm">
+            <div className="prose prose-sm h-full max-w-none overflow-hidden text-[#404040]">
+              {hasContent ? (
+                <ReactMarkdown urlTransform={markdownUrlTransform}>
+                  {previewChunks[currentPreviewPage - 1] ?? ''}
+                </ReactMarkdown>
+              ) : (
+                <div className="space-y-2 text-center text-sm text-[#6b7280]">
+                  <h3 className="text-base font-semibold text-[#262626]">Preview will appear here</h3>
+                  <p>As you add content, Draft will format it into pages automatically.</p>
                 </div>
               )}
-            </button>
-          ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPreviewPage <= 1}
+              onClick={() => setActivePreviewPage((prev) => Math.max(1, prev - 1))}
+            >
+              Prev
+            </Button>
+            <div className="flex items-center justify-center rounded-md border border-neutral-200 bg-white text-xs font-medium text-neutral-600">
+              Page {currentPreviewPage}/{totalPreviewPages}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPreviewPage >= totalPreviewPages}
+              onClick={() => setActivePreviewPage((prev) => Math.min(totalPreviewPages, prev + 1))}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </div>
     </div>
   );
 
   const renderLayoutMode = () => (
-    <div className="h-full min-h-0 overflow-y-auto bg-white px-4 py-3">
-      <Accordion type="multiple" defaultValue={['template', 'setup', 'typography']} className="w-full">
+    <div className="h-full min-h-0 overflow-hidden bg-white px-4 py-2">
+      <Accordion type="single" collapsible defaultValue="template" className="w-full">
         <AccordionItem value="template">
           <AccordionTrigger>Template</AccordionTrigger>
           <AccordionContent className="space-y-2">
@@ -308,6 +324,7 @@ export function MobileWorkspace({
     if (utilityView === 'saved') {
       return (
         <SavedDocuments
+          compactMode="fixed"
           documents={savedDocuments}
           onOpenDocument={(id) => {
             onOpenSavedDocument?.(id);
@@ -320,7 +337,7 @@ export function MobileWorkspace({
       );
     }
     if (utilityView === 'settings') {
-      return <SettingsPanel settings={workspaceSettings} onChange={onWorkspaceSettingsChange} />;
+      return <SettingsPanel compactMode="fixed" settings={workspaceSettings} onChange={onWorkspaceSettingsChange} />;
     }
     if (utilityView === 'about') {
       return <AboutPage />;
@@ -333,7 +350,7 @@ export function MobileWorkspace({
 
   return (
     <div className="flex h-full w-full max-w-full flex-col overflow-hidden">
-      <header className="border-b border-neutral-200 bg-white px-3 py-2">
+      <header className="border-b border-neutral-200 bg-white px-3 py-1.5">
         <div className="relative flex items-center justify-center">
           <Sheet>
             <SheetTrigger asChild>
@@ -446,7 +463,7 @@ export function MobileWorkspace({
 
       <main className="min-h-0 flex-1 overflow-hidden">{renderModeContent()}</main>
 
-      <nav className="grid grid-cols-4 gap-2 border-t border-neutral-200 bg-white p-2">
+      <nav className="grid grid-cols-4 gap-1.5 border-t border-neutral-200 bg-white p-1.5">
         <Button
           variant="outline"
           size="sm"

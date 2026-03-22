@@ -21,6 +21,7 @@ interface SavedDocumentsProps {
   onOpenDocument?: (id: string) => void;
   onDuplicateDocument?: (id: string) => void;
   onDeleteDocument?: (id: string) => void;
+  compactMode?: 'default' | 'fixed';
 }
 
 export function SavedDocuments({
@@ -28,7 +29,19 @@ export function SavedDocuments({
   onOpenDocument,
   onDuplicateDocument,
   onDeleteDocument,
+  compactMode = 'default',
 }: SavedDocumentsProps) {
+  const [activeIndex, setActiveIndex] = React.useState(0);
+
+  React.useEffect(() => {
+    setActiveIndex((prev) => {
+      if (documents.length === 0) return 0;
+      if (prev < 0) return 0;
+      if (prev > documents.length - 1) return documents.length - 1;
+      return prev;
+    });
+  }, [documents.length]);
+
   const renderPreview = (content: string) => {
     const firstPage = splitContentIntoPages(content, 1300)[0]?.trim() ?? '';
     if (!firstPage) {
@@ -40,6 +53,106 @@ export function SavedDocuments({
       </div>
     );
   };
+
+  if (compactMode === 'fixed') {
+    const activeDoc = documents[activeIndex];
+    return (
+      <div className="h-full bg-white flex flex-col overflow-hidden">
+        <div className="px-4 py-2 border-b border-neutral-200">
+          <h2 className="text-base font-semibold text-neutral-900">Library</h2>
+          <p className="text-xs text-neutral-500 mt-0.5">Local workspace files</p>
+        </div>
+
+        <div className="flex-1 min-h-0 p-4">
+          {documents.length === 0 ? (
+            <div className="h-full rounded-lg border border-neutral-200 bg-neutral-50 p-4 flex flex-col justify-center">
+              <h3 className="text-sm font-semibold text-neutral-900">No library items yet</h3>
+              <p className="mt-1 text-sm text-neutral-600">Saved documents will appear here.</p>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col gap-3">
+              <Card
+                className="flex-1 min-h-0 p-4 cursor-pointer hover:shadow-md transition-shadow border-neutral-200"
+                onClick={() => onOpenDocument?.(activeDoc.id)}
+              >
+                <div className="h-[58%] bg-[#ffffff] rounded-lg mb-3 border border-[#e5e7eb] overflow-hidden p-3">
+                  <div className="h-full w-full overflow-hidden">{renderPreview(activeDoc.content)}</div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="font-semibold text-neutral-900 flex-1 truncate">{activeDoc.title}</h4>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 -mt-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="w-4 h-4 text-neutral-500" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDuplicateDocument?.(activeDoc.id);
+                          }}
+                        >
+                          <Copy className="w-4 h-4" />
+                          Duplicate
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteDocument?.(activeDoc.id);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs text-neutral-500">
+                    <Clock className="w-3 h-3" />
+                    {new Date(activeDoc.updatedAt).toLocaleString()}
+                  </div>
+
+                  <div className="text-xs text-neutral-500">{activeDoc.pageCount} pages</div>
+                </div>
+              </Card>
+
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={activeIndex <= 0}
+                  onClick={() => setActiveIndex((prev) => Math.max(0, prev - 1))}
+                >
+                  Prev
+                </Button>
+                <div className="flex items-center justify-center rounded-md border border-neutral-200 bg-white text-xs font-medium text-neutral-600">
+                  {activeIndex + 1}/{documents.length}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={activeIndex >= documents.length - 1}
+                  onClick={() => setActiveIndex((prev) => Math.min(documents.length - 1, prev + 1))}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full bg-white flex flex-col">

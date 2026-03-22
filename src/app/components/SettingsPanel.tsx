@@ -3,6 +3,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
 import { Separator } from './ui/separator';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
 export interface WorkspaceSettings {
   autoSave: boolean;
@@ -16,6 +17,7 @@ export interface WorkspaceSettings {
 interface SettingsPanelProps {
   settings?: WorkspaceSettings;
   onChange?: (next: WorkspaceSettings) => void;
+  compactMode?: 'default' | 'fixed';
 }
 
 const fallbackSettings: WorkspaceSettings = {
@@ -27,10 +29,110 @@ const fallbackSettings: WorkspaceSettings = {
   uiScale: 'medium',
 };
 
-export function SettingsPanel({ settings = fallbackSettings, onChange }: SettingsPanelProps) {
+export function SettingsPanel({ settings = fallbackSettings, onChange, compactMode = 'default' }: SettingsPanelProps) {
   const setValue = <K extends keyof WorkspaceSettings>(key: K, value: WorkspaceSettings[K]) => {
     onChange?.({ ...settings, [key]: value });
   };
+
+  if (compactMode === 'fixed') {
+    return (
+      <div className="h-full bg-white flex flex-col overflow-hidden">
+        <div className="px-4 py-2 border-b border-neutral-200">
+          <h2 className="text-base font-semibold text-neutral-900">Workspace Settings</h2>
+          <p className="text-xs text-neutral-500 mt-0.5">Configure your workspace preferences</p>
+        </div>
+
+        <div className="flex-1 min-h-0 overflow-hidden px-4 py-2">
+          <Accordion type="single" collapsible defaultValue="editor" className="w-full">
+            <AccordionItem value="editor">
+              <AccordionTrigger>Editor</AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm text-neutral-700">Auto-save</Label>
+                  <Switch checked={settings.autoSave} onCheckedChange={(v) => setValue('autoSave', v)} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm text-neutral-700">Font size</Label>
+                  <select
+                    className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm bg-white"
+                    value={`${settings.editorFontSize}px`}
+                    onChange={(e) => setValue('editorFontSize', Number.parseInt(e.target.value.replace('px', ''), 10) as 12 | 14 | 16 | 18)}
+                  >
+                    <option>12px</option>
+                    <option>14px</option>
+                    <option>16px</option>
+                    <option>18px</option>
+                  </select>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="defaults">
+              <AccordionTrigger>Document Defaults</AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                <div className="space-y-2">
+                  <Label className="text-sm text-neutral-700">Default template</Label>
+                  <select
+                    className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm bg-white"
+                    value={settings.defaultTemplate}
+                    onChange={(e) => setValue('defaultTemplate', e.target.value as WorkspaceSettings['defaultTemplate'])}
+                  >
+                    <option value="book">Book layout</option>
+                    <option value="zine">Zine layout</option>
+                    <option value="catalogue">Catalogue grid</option>
+                    <option value="report">Report format</option>
+                    <option value="custom">Custom layout</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm text-neutral-700">Default page size</Label>
+                  <select
+                    className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm bg-white"
+                    value={settings.defaultPageSize}
+                    onChange={(e) => setValue('defaultPageSize', e.target.value as WorkspaceSettings['defaultPageSize'])}
+                  >
+                    <option value="a4">A4</option>
+                    <option value="a5">A5</option>
+                    <option value="letter">Letter</option>
+                    <option value="legal">Legal</option>
+                  </select>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="appearance">
+              <AccordionTrigger>Appearance</AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                <div className="space-y-2">
+                  <Label className="text-sm text-neutral-700">Theme</Label>
+                  <select
+                    className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm bg-white"
+                    value={settings.theme}
+                    onChange={(e) => setValue('theme', e.target.value as WorkspaceSettings['theme'])}
+                  >
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm text-neutral-700">UI scale</Label>
+                  <select
+                    className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm bg-white"
+                    value={settings.uiScale}
+                    onChange={(e) => setValue('uiScale', e.target.value as WorkspaceSettings['uiScale'])}
+                  >
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                  </select>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full bg-white flex flex-col">

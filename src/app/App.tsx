@@ -444,7 +444,7 @@ export default function App() {
 
   if (isPhone) {
     return (
-      <div className="h-screen w-full max-w-full overflow-hidden bg-background text-foreground" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <div className="h-[100dvh] w-full max-w-full overflow-hidden bg-background text-foreground" style={{ fontFamily: 'Inter, sans-serif' }}>
         <MobileWorkspace
           content={content}
           onContentChange={setContent}
@@ -484,7 +484,7 @@ export default function App() {
 
   if (isTabletPortrait || isTabletLandscape) {
     return (
-      <div className="h-screen w-full max-w-full overflow-hidden bg-background text-foreground" style={{ fontFamily: 'Inter, sans-serif' }}>
+      <div className="h-[100dvh] w-full max-w-full overflow-hidden bg-background text-foreground" style={{ fontFamily: 'Inter, sans-serif' }}>
         <TabletWorkspace
           mode={isTabletLandscape ? 'landscape' : 'portrait'}
           content={content}
