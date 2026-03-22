@@ -1,7 +1,9 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
+  AlertTriangle,
   Download,
+  FileSearch,
   FileText,
   FileOutput,
   Info,
@@ -23,8 +25,9 @@ import { SettingsPanel, type WorkspaceSettings } from './SettingsPanel';
 import { AboutPage } from './AboutPage';
 import { markdownUrlTransform } from '../lib/markdown';
 import { splitContentIntoPages } from '../lib/paging';
+import { analyzeDocument } from '../lib/preflight';
 
-type MobileMode = 'edit' | 'preview' | 'layout';
+type MobileMode = 'edit' | 'preview' | 'layout' | 'preflight';
 type UtilityView = 'none' | 'saved' | 'settings' | 'about';
 
 interface MobileWorkspaceProps {
@@ -77,6 +80,7 @@ export function MobileWorkspace({
   const trimmedContent = content.trim();
   const hasContent = trimmedContent.length > 0;
   const previewChunks = hasContent ? splitContentIntoPages(content, 1600) : [''];
+  const preflight = analyzeDocument(content);
   const totalPreviewPages = previewChunks.length;
   const currentPreviewPage = Math.min(Math.max(activePreviewPage, 1), totalPreviewPages);
 
@@ -320,6 +324,66 @@ export function MobileWorkspace({
     </div>
   );
 
+  const renderPreflightMode = () => {
+    const visibleIssues = preflight.issues.slice(0, 3);
+    const hiddenIssueCount = Math.max(0, preflight.issues.length - visibleIssues.length);
+
+    return (
+      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
+        <div className="border-b border-neutral-200 px-4 py-2">
+          <p className="text-xs uppercase tracking-wide text-neutral-500">Preflight</p>
+        </div>
+        <div className="flex-1 min-h-0 px-4 py-3">
+          <div
+            className={`rounded-lg border p-3 ${
+              preflight.severity === 'major'
+                ? 'border-amber-300 bg-amber-50'
+                : preflight.severity === 'minor'
+                  ? 'border-neutral-200 bg-neutral-50'
+                  : 'border-emerald-300 bg-emerald-50'
+            }`}
+          >
+            <p className="text-sm font-medium text-neutral-900">
+              {preflight.severity === 'major'
+                ? 'Major issues found'
+                : preflight.severity === 'minor'
+                  ? 'Minor issues found'
+                  : 'Layout ready for export'}
+            </p>
+            <p className="mt-1 text-xs text-neutral-600">
+              {preflight.severity === 'none'
+                ? 'No blocking issues detected.'
+                : `${preflight.issues.length} warning${preflight.issues.length > 1 ? 's' : ''} detected.`}
+            </p>
+          </div>
+
+          <div className="mt-3 space-y-2">
+            {visibleIssues.length === 0 ? (
+              <div className="rounded-lg border border-neutral-200 bg-white p-3 text-sm text-neutral-700">
+                Everything looks good.
+              </div>
+            ) : (
+              visibleIssues.map((issue) => (
+                <div key={issue.id} className="rounded-lg border border-neutral-200 bg-white p-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-neutral-900">
+                    <AlertTriangle className={`h-4 w-4 ${issue.level === 'major' ? 'text-amber-600' : 'text-neutral-500'}`} />
+                    {issue.title}
+                  </div>
+                  <p className="mt-1 text-xs text-neutral-600">{issue.text}</p>
+                </div>
+              ))
+            )}
+            {hiddenIssueCount > 0 && (
+              <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-600">
+                +{hiddenIssueCount} more issue{hiddenIssueCount > 1 ? 's' : ''}. Open export for full review.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderModeContent = () => {
     if (utilityView === 'saved') {
       return (
@@ -345,6 +409,7 @@ export function MobileWorkspace({
 
     if (mode === 'edit') return renderEditorMode();
     if (mode === 'preview') return renderPreviewMode();
+    if (mode === 'preflight') return renderPreflightMode();
     return renderLayoutMode();
   };
 
@@ -363,6 +428,19 @@ export function MobileWorkspace({
                 <SheetTitle>Menu</SheetTitle>
               </SheetHeader>
               <div className="space-y-2 p-4">
+                <SheetClose asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      setUtilityView('none');
+                      setMode('preflight');
+                    }}
+                  >
+                    <FileSearch className="h-4 w-4" />
+                    Preflight
+                  </Button>
+                </SheetClose>
                 <SheetClose asChild>
                   <Button
                     variant="outline"
@@ -463,7 +541,7 @@ export function MobileWorkspace({
 
       <main className="min-h-0 flex-1 overflow-hidden">{renderModeContent()}</main>
 
-      <nav className="grid grid-cols-4 gap-1.5 border-t border-neutral-200 bg-white p-1.5">
+      <nav className="grid grid-cols-5 gap-1.5 border-t border-neutral-200 bg-white p-1.5">
         <Button
           variant="outline"
           size="sm"
@@ -499,6 +577,18 @@ export function MobileWorkspace({
         >
           <LayoutTemplate className="h-4 w-4" />
           <span className="text-[11px]">Layout</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className={`h-11 flex-col ${mode === 'preflight' && utilityView === 'none' ? 'bg-neutral-100 border-neutral-900' : ''}`}
+          onClick={() => {
+            setUtilityView('none');
+            setMode('preflight');
+          }}
+        >
+          <FileSearch className="h-4 w-4" />
+          <span className="text-[11px]">Check</span>
         </Button>
         <Button
           variant="outline"

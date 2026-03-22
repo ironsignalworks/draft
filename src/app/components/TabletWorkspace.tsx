@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 import { markdownUrlTransform } from '../lib/markdown';
 import { splitContentIntoPages } from '../lib/paging';
 
-type TabletMode = 'edit' | 'preview' | 'layout' | 'export';
+type TabletMode = 'edit' | 'preview' | 'layout' | 'preflight' | 'export';
 type UtilityView = 'none' | 'saved' | 'settings';
 type LandscapeSheet = 'none' | 'layout' | 'preflight';
 type LandscapeFocus = 'editor' | 'split' | 'preview';
@@ -127,6 +127,19 @@ export function TabletWorkspace({
                 >
                   <SquarePen className="h-4 w-4" />
                   New document
+                </Button>
+              </SheetClose>
+              <SheetClose asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    setUtilityView('none');
+                    setTabletMode('preflight');
+                  }}
+                >
+                  <FileSearch className="h-4 w-4" />
+                  Preflight
                 </Button>
               </SheetClose>
               <SheetClose asChild>
@@ -377,6 +390,58 @@ export function TabletWorkspace({
       );
     }
 
+    if (tabletMode === 'preflight') {
+      return (
+        <div className="flex h-full min-h-0 flex-col bg-white">
+          <div className="border-b border-neutral-200 px-4 py-3">
+            <p className="text-xs uppercase tracking-wide text-neutral-500">Preflight</p>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
+            <div className="space-y-3">
+              <div
+                className={`rounded-lg border p-4 ${
+                  preflight.severity === 'major'
+                    ? 'border-amber-300 bg-amber-50'
+                    : preflight.severity === 'minor'
+                      ? 'border-neutral-200 bg-neutral-50'
+                      : 'border-emerald-300 bg-emerald-50'
+                }`}
+              >
+                <h3 className="text-sm font-semibold text-neutral-900">
+                  {preflight.severity === 'major'
+                    ? 'Major issues found'
+                    : preflight.severity === 'minor'
+                      ? 'Minor issues found'
+                      : 'Layout ready for export'}
+                </h3>
+                <p className="mt-1 text-sm text-neutral-600">
+                  {preflight.severity === 'none'
+                    ? 'No blocking issues detected.'
+                    : `${preflight.issues.length} warning${preflight.issues.length > 1 ? 's' : ''} detected.`}
+                </p>
+              </div>
+
+              {preflight.issues.length === 0 ? (
+                <div className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-700">
+                  Everything looks good.
+                </div>
+              ) : (
+                preflight.issues.map((issue) => (
+                  <div key={issue.id} className="rounded-lg border border-neutral-200 bg-white p-4">
+                    <div className="flex items-center gap-2 text-sm font-medium text-neutral-900">
+                      <AlertTriangle className={`h-4 w-4 ${issue.level === 'major' ? 'text-amber-600' : 'text-neutral-500'}`} />
+                      {issue.title}
+                    </div>
+                    <p className="mt-1 text-sm text-neutral-600">{issue.text}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex h-full min-h-0 flex-col bg-[#ffffff]">
         <div className="border-b border-[#e5e7eb] px-4 py-3">
@@ -546,7 +611,7 @@ export function TabletWorkspace({
         {mode === 'portrait' ? renderPortraitMode() : renderLandscapeMode()}
       </main>
       {mode === 'portrait' && (
-        <nav className="grid grid-cols-3 gap-2 border-t border-neutral-200 bg-white p-2">
+        <nav className="grid grid-cols-4 gap-2 border-t border-neutral-200 bg-white p-2">
           <Button variant="outline" size="sm" className={`h-11 flex-col ${tabletMode === 'edit' ? 'bg-neutral-100 border-neutral-900' : ''}`} onClick={() => { setUtilityView('none'); setTabletMode('edit'); }}>
             <SquarePen className="h-4 w-4" />
             <span className="text-[11px]">Edit</span>
@@ -558,6 +623,10 @@ export function TabletWorkspace({
           <Button variant="outline" size="sm" className={`h-11 flex-col ${tabletMode === 'layout' ? 'bg-neutral-100 border-neutral-900' : ''}`} onClick={() => { setUtilityView('none'); setTabletMode('layout'); }}>
             <LayoutTemplate className="h-4 w-4" />
             <span className="text-[11px]">Layout</span>
+          </Button>
+          <Button variant="outline" size="sm" className={`h-11 flex-col ${tabletMode === 'preflight' ? 'bg-neutral-100 border-neutral-900' : ''}`} onClick={() => { setUtilityView('none'); setTabletMode('preflight'); }}>
+            <FileSearch className="h-4 w-4" />
+            <span className="text-[11px]">Check</span>
           </Button>
         </nav>
       )}

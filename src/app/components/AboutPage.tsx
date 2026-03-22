@@ -71,7 +71,7 @@ export function AboutPage() {
                 ironsignalworks.com
               </a>
             </p>
-            <p className="text-xs text-neutral-500">V1.2.0</p>
+            <p className="text-xs text-neutral-500">V1.3.0</p>
           </Card>
         </div>
       </ScrollArea>

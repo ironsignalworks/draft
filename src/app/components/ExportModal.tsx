@@ -169,7 +169,7 @@ export function ExportModal({ open, onClose, content, documentName, onReviewLayo
                   <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
                     <h3 className="text-sm font-semibold text-amber-900">Export paused</h3>
                     <p className="text-sm text-amber-800">
-                      Resolve layout warnings shown in Preflight to ensure a clean output.
+                      Resolve layout warnings in Preflight (the Check button on mobile/tablet) to ensure a clean output.
                     </p>
                     <Button
                       variant="outline"
