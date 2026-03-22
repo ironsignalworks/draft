@@ -24,6 +24,7 @@ import { analyzeDocument } from '../lib/preflight';
 import { toast } from 'sonner';
 import { markdownUrlTransform } from '../lib/markdown';
 import { splitContentIntoPages } from '../lib/paging';
+import logoIcon from '../../../icon-app.svg';
 
 type TabletMode = 'edit' | 'preview' | 'layout' | 'preflight' | 'export';
 type UtilityView = 'none' | 'saved' | 'settings';
@@ -184,7 +185,7 @@ export function TabletWorkspace({
 
         <div className="min-w-0">
           <div className="mb-1 flex items-center justify-center gap-1.5">
-            <img src="/icon-app.svg" alt="Draft" className="h-4 w-4 shrink-0 dark:invert" />
+            <img src={logoIcon} alt="Draft" className="h-4 w-4 shrink-0 dark:invert" />
             <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Draft</span>
           </div>
           {isRenamingTitle ? (

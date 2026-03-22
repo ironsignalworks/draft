@@ -26,6 +26,7 @@ import { AboutPage } from './AboutPage';
 import { markdownUrlTransform } from '../lib/markdown';
 import { splitContentIntoPages } from '../lib/paging';
 import { analyzeDocument } from '../lib/preflight';
+import logoIcon from '../../../icon-app.svg';
 
 type MobileMode = 'edit' | 'preview' | 'layout' | 'preflight';
 type UtilityView = 'none' | 'saved' | 'settings' | 'about';
@@ -510,7 +511,7 @@ export function MobileWorkspace({
 
           <div className="min-w-0 text-center">
             <div className="mb-1 flex items-center justify-center gap-1.5">
-              <img src="/icon-app.svg" alt="Draft" className="h-4 w-4 shrink-0 dark:invert" />
+              <img src={logoIcon} alt="Draft" className="h-4 w-4 shrink-0 dark:invert" />
               <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Draft - Publishing Tool</span>
             </div>
             {isRenamingTitle ? (
